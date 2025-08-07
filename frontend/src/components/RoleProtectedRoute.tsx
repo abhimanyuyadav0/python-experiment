@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole: 'admin' | 'tenant' | 'user' | ('admin' | 'tenant' | 'user')[];
+  requiredRole: "admin" | "tenant" | "user" | ("admin" | "tenant" | "user")[];
   fallbackPath?: string;
 }
 
-export default function RoleProtectedRoute({ 
-  children, 
-  requiredRole, 
-  fallbackPath = '/dashboard' 
+export default function RoleProtectedRoute({
+  children,
+  requiredRole,
+  fallbackPath = "/dashboard",
 }: RoleProtectedRouteProps) {
-  const { isAuthenticated, isLoading, hasRole, isAdmin, isTenant, isUser } = useAuth();
+  const { isAuthenticated, isLoading, hasRole, isAdmin, isTenant, isUser } =
+    useAuth();
   const router = useRouter();
-
   const hasRequiredRole = () => {
     if (Array.isArray(requiredRole)) {
-      return requiredRole.some(role => hasRole(role));
+      return requiredRole.some((role) => hasRole(role));
     }
     return hasRole(requiredRole);
   };
@@ -29,7 +29,14 @@ export default function RoleProtectedRoute({
     if (!isLoading && (!isAuthenticated || !hasRequiredRole())) {
       router.push(fallbackPath);
     }
-  }, [isAuthenticated, isLoading, hasRequiredRole, requiredRole, router, fallbackPath]);
+  }, [
+    isAuthenticated,
+    isLoading,
+    hasRequiredRole,
+    requiredRole,
+    router,
+    fallbackPath,
+  ]);
 
   if (isLoading) {
     return (
@@ -44,4 +51,4 @@ export default function RoleProtectedRoute({
   }
 
   return <>{children}</>;
-} 
+}

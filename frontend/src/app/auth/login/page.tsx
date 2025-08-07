@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("abhimanyujune3@gmail.com");
+  const [password, setPassword] = useState("1234567890");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -95,6 +95,19 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+        <div className="text-center">
+          <button
+            type="button"
+            className="text-sm text-blue-600 hover:underline mt-2"
+            onClick={() => {
+              setEmail("abhimanyujune3@gmail.com");
+              setPassword("1234567890");
+              handleSubmit(new Event("submit") as any); // fake submit event
+            }}
+          >
+            Login with Test Account
+          </button>
+        </div>
       </div>
     </div>
   );

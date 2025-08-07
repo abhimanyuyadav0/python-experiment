@@ -23,7 +23,7 @@ def authenticate_user_endpoint(user_credentials: UserLogin, db: Session = Depend
     
     # Create access token
     token, expires_at = create_access_token(data={"sub": user.email})
-    
+    print("token, expires_at", token, expires_at)
     return TokenData(
         user=user,
         token=token,

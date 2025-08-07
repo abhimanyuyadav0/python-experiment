@@ -1,67 +1,67 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TokenData {
   token: string;
-  expiresAt: number;
+  expiresAt: number; // Should be in milliseconds
 }
 
 export default function TokenExpirationCountdown() {
-  const [timeLeft, setTimeLeft] = useState<string>('');
+  const [timeLeft, setTimeLeft] = useState<string>("");
   const { token } = useAuth();
+
   useEffect(() => {
     if (!token) {
-      setTimeLeft('');
+      setTimeLeft("");
       return;
     }
 
     const updateCountdown = () => {
-      const tokenDataStr = localStorage.getItem('tokenData');
+      const tokenDataStr = localStorage.getItem("tokenData");
       if (!tokenDataStr) {
-        setTimeLeft('');
+        setTimeLeft("");
         return;
       }
 
       try {
         const tokenData: TokenData = JSON.parse(tokenDataStr);
         const now = Date.now();
-        const timeRemaining = tokenData.expiresAt * 1000 - now;
-
+        const timeRemaining = now - tokenData.expiresAt; // expiresAt is already in ms
         if (timeRemaining <= 0) {
-          setTimeLeft('Expired');
+          setTimeLeft("Expired");
           return;
         }
 
-        const minutes = Math.floor(timeRemaining / 1000 / 60);
-        const seconds = Math.floor(timeRemaining / 1000 % 60);
-        setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        const minutes = Math.floor(timeRemaining / 6000); // 60000 ms in a minute
+        const seconds = Math.floor((timeRemaining % 60000) / 1000);
+        setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
       } catch (error) {
-        console.error('Error parsing token data:', error);
-        setTimeLeft('');
+        console.error("Error parsing token data:", error);
+        setTimeLeft("");
       }
     };
 
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
-
     return () => clearInterval(interval);
   }, [token]);
 
-  if (!token || !timeLeft) {
-    return null;
-  }
+  if (!token || !timeLeft) return null;
 
-  const isExpiringSoon = timeLeft !== 'Expired' && parseInt(timeLeft.split(':')[0]) < 1;
+  const isExpiringSoon =
+    timeLeft !== "Expired" && parseInt(timeLeft.split(":")[0]) < 1;
 
   return (
-    <div className={`text-xs px-2 py-1 rounded ${
-      isExpiringSoon 
-        ? 'bg-red-100 text-red-800' 
-        : 'bg-yellow-100 text-yellow-800'
-    }`}>
+    <div
+      className={`text-xs px-2 py-1 rounded ${
+        isExpiringSoon
+          ? "bg-red-100 text-red-800"
+          : "bg-yellow-100 text-yellow-800"
+      }`}
+    >
       Token expires in: {timeLeft}
     </div>
   );
-} 
+}

@@ -63,25 +63,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
   // Token management functions
   const saveToken = (token: string, expiresAt: number) => {
     const tokenData: TokenData = { token, expiresAt };
-    localStorage.setItem("tokenData", JSON.stringify(tokenData));
+    const tokenDataString = JSON.stringify(tokenData);
+    localStorage.setItem("tokenData", tokenDataString);
     setToken(token);
   };
 
   const getToken = (): string | null => {
     const tokenDataStr = localStorage.getItem("tokenData");
     if (!tokenDataStr) return null;
+    // alert(tokenDataStr);
 
     try {
       const tokenData: TokenData = JSON.parse(tokenDataStr);
-      if (Date.now() > tokenData.expiresAt) {
-        // Token expired
+      const now = Date.now();
+      const timeRemaining = now - tokenData.expiresAt;
+      const isExpired = timeRemaining <= 0;
+
+      if (isExpired) {
+        alert("Token expired");
         localStorage.removeItem("tokenData");
         localStorage.removeItem("user");
-        setToken(null);
-        setUser(null);
         return null;
       }
       return tokenData.token;
@@ -104,16 +109,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check if user is logged in on app start
     const currentToken = getToken();
     const userData = localStorage.getItem("user");
-
     if (currentToken && userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
         setToken(currentToken);
-        redirectToDashboard(JSON.parse(userData).role);
       } catch (error) {
         console.error("Error parsing user data:", error);
         clearToken();
       }
+    } else {
+      console.log("AuthContext: No valid token or user data found");
     }
     setIsLoading(false);
   }, []);
@@ -123,6 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const interval = setInterval(() => {
       const currentToken = getToken();
       if (!currentToken && user) {
+        // Token expired but user state still exists, clear everything
         clearToken();
       }
     }, 60000); // Check every minute
@@ -146,6 +153,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.data) {
         const { user: userData, token, expires_at } = response.data;
+        console.log("login: Received response", {
+          userData,
+          token: token,
+          expires_at,
+        });
+
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
 

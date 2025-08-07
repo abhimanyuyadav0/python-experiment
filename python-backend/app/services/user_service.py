@@ -22,18 +22,26 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire_minutes = ACCESS_TOKEN_EXPIRE_MINUTES or 5  # fallback to 5 minutes
+        expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
     
-    # Add standard JWT claims
+    current_time = datetime.utcnow()
+    print(f"🔐 Token Debug: ACCESS_TOKEN_EXPIRE_MINUTES = {ACCESS_TOKEN_EXPIRE_MINUTES}")
+    print(f"🔐 Token Debug: Current time (UTC) = {current_time}")
+    print(f"🔐 Token Debug: Expire time (UTC) = {expire}")
+    print(f"🔐 Token Debug: Current timestamp (seconds) = {current_time.timestamp()}")
+    print(f"🔐 Token Debug: Current timestamp (ms) = {int(current_time.timestamp() * 1000)}")
+    print(f"🔐 Token Debug: Expire timestamp (seconds) = {expire.timestamp()}")
+    print(f"🔐 Token Debug: Expire timestamp (ms) = {int(expire.timestamp() * 1000)}")
+    print(f"🔐 Token Debug: Time difference (ms) = {int(expire.timestamp() * 1000) - int(current_time.timestamp() * 1000)}")
+    
     to_encode.update({
-        "exp": expire,  # PyJWT will handle the conversion to timestamp
-        "iat": datetime.utcnow(),  # Issued at
+        "exp": expire,
+        "iat": current_time,
         "type": "access"
     })
     
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    
-    # Return expiration time in milliseconds for frontend compatibility
     expire_timestamp_ms = int(expire.timestamp() * 1000)
     return encoded_jwt, expire_timestamp_ms
 

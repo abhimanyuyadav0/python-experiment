@@ -73,7 +73,8 @@ def test_token():
     
     # Calculate time until expiration
     now = datetime.utcnow()
-    expire_time = datetime.fromtimestamp(expires_at)
+    # expires_at is in milliseconds, convert to seconds for fromtimestamp
+    expire_time = datetime.fromtimestamp(expires_at / 1000)
     time_until_expiry = expire_time - now
     
     return {

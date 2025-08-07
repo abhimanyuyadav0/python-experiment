@@ -1,18 +1,34 @@
+"use client";
+
 import { useAuth } from "@/contexts/AuthContext";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import TokenExpirationCountdown from "../TokenExpirationCountdown";
 
 const Header = ({ role }: { role: "admin" | "tenant" | "user" }) => {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
   };
 
+  // Close menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const userIcon = (
-    <div className="ml-3 relative">
+    <div className="ml-3 relative" ref={menuRef}>
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -24,8 +40,9 @@ const Header = ({ role }: { role: "admin" | "tenant" | "user" }) => {
           </span>
         </div>
       </button>
+
       {isMenuOpen && (
-        <div className="sm:hidden absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md py-2 z-50">
+        <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md py-2 z-50">
           <Link
             href={`/${role}`}
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

@@ -2,10 +2,27 @@
 
 import Modal from "@/components/modal";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileJson, FileText, XIcon, Upload, File, Download, Trash2 } from "lucide-react";
+import {
+  FileJson,
+  FileText,
+  XIcon,
+  Upload,
+  File,
+  Download,
+  Trash2,
+  RefreshCcw,
+} from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import generatePDF from "react-to-pdf";
-import { uploadFile, getUserFiles, deleteFile as deleteFileService, downloadFile as downloadFileService, FileResponse, testFileAuth } from "@/lib/api/services/fileServices";
+import {
+  uploadFile,
+  getUserFiles,
+  deleteFile as deleteFileService,
+  downloadFile as downloadFileService,
+} from "@/lib/api/services/fileServices";
+import { toast } from "react-toastify";
+import { useQuery } from "@tanstack/react-query";
+import Button from "@/components/button";
 
 interface MedicalReport {
   patientId: string;
@@ -54,28 +71,17 @@ const CreateDataPage = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>("");
-  const [uploadedFiles, setUploadedFiles] = useState<FileResponse[]>([]);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { token } = useAuth();
 
-  // Load files on component mount
-  useEffect(() => {
-    console.log("CreateDataPage: useEffect triggered, token:", token ? "exists" : "null");
-    if (token) {
-      listUploadedFiles();
-    }
-  }, [token]);
-
   // Format file size
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const generateRandomName = () => {
@@ -301,9 +307,9 @@ const CreateDataPage = () => {
         },
       };
 
-      console.log("Starting PDF generation with options:", options);
+      toast.info("Starting PDF generation with options:");
       await generatePDF(reportRef, options);
-      console.log("PDF generated successfully");
+      toast.success("PDF generated successfully");
     } catch (error) {
       console.error("Error generating PDF:", error);
 
@@ -579,7 +585,6 @@ const CreateDataPage = () => {
               printWindow.print();
               printWindow.close();
             }, 500);
-
           } else {
           }
         } catch (printError) {
@@ -595,6 +600,16 @@ const CreateDataPage = () => {
     fileInputRef.current?.click();
   };
 
+  const {
+    data: uploadedFiles,
+    isFetching: isLoadingFiles,
+    refetch: refetchFiles,
+  } = useQuery({
+    queryKey: ["files"],
+    queryFn: () => getUserFiles(),
+    enabled: false, // Disable initial fetch
+  });
+
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -604,24 +619,24 @@ const CreateDataPage = () => {
     console.log("CreateDataPage: File selected:", {
       name: file.name,
       type: file.type,
-      size: file.size
+      size: file.size,
     });
 
     // Validate file type (allow common file types)
     const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain',
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'video/mp4',
-      'audio/mpeg',
-      'application/zip'
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "video/mp4",
+      "audio/mpeg",
+      "application/zip",
     ];
-    
+
     if (!allowedTypes.includes(file.type)) {
       return;
     }
@@ -635,20 +650,20 @@ const CreateDataPage = () => {
     setUploadStatus(`Uploading ${file.name}...`);
 
     try {
-      console.log("CreateDataPage: Starting file upload");
+      toast.info("Starting file upload");
       const response = await uploadFile(file);
-      console.log("CreateDataPage: Upload response:", response);
+      toast.success("Upload successful!");
       setUploadStatus("Upload successful!");
 
       // Add to uploaded files list
-      setUploadedFiles((prev) => [...prev, response.data.file]);
+      refetchFiles();
 
       // Show uploaded files modal
-      setShowUploadModal(true);
     } catch (error: any) {
-      console.error("CreateDataPage: Upload error:", error);
-      const errorMessage = error.response?.data?.detail || "Upload failed";
-      setUploadStatus(`Upload failed: ${errorMessage}`);
+      toast.error("Upload error:", error);
+      setUploadStatus(
+        `Upload failed: ${error.response?.data?.detail || "Upload failed"}`
+      );
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -658,30 +673,16 @@ const CreateDataPage = () => {
     }
   };
 
-  const listUploadedFiles = async () => {
-    console.log("CreateDataPage: listUploadedFiles called");
-    setIsLoadingFiles(true);
-    try {
-      const response = await getUserFiles();
-      console.log("CreateDataPage: getUserFiles response:", response);
-      setUploadedFiles(response.data.files);
-      setShowUploadModal(true);
-    } catch (error: any) {
-      console.error("CreateDataPage: Error fetching files:", error);
-      const errorMessage = error.response?.data?.detail || "Failed to fetch uploaded files";
-    } finally {
-      setIsLoadingFiles(false);
-    }
-  };
-
   const downloadFile = async (fileId: number, filename: string) => {
     try {
       const response = await downloadFileService(fileId);
-      
+
       // Create blob and download
-      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
@@ -689,7 +690,7 @@ const CreateDataPage = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
-      console.error("Error downloading file:", error);
+      toast.error("Error downloading file:", error);
     }
   };
 
@@ -698,31 +699,26 @@ const CreateDataPage = () => {
 
     try {
       await deleteFileService(fileId);
-      
-      // Remove from uploaded files list
-      setUploadedFiles((prev) =>
-        prev.filter((file) => file.id !== fileId)
-      );
-    } catch (error: any) {
-      console.error("Error deleting file:", error);
-    }
-  };
 
-  const testAuth = async () => {
-    try {
-      console.log("CreateDataPage: Testing file authentication");
-      const response = await testFileAuth();
-      console.log("CreateDataPage: Auth test successful:", response.data);
+      // Remove from uploaded files list
+      refetchFiles();
     } catch (error: any) {
-      console.error("CreateDataPage: Auth test failed:", error);
+      toast.error("Error deleting file:", error);
     }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Medical Report Data Generator
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">
+          Medical Report Data Generator
+        </h1>
+        <button onClick={() => refetchFiles()} disabled={isLoadingFiles}>
+          <RefreshCcw
+            className={`w-5 h-5 ${isLoadingFiles ? "animate-spin" : ""}`}
+          />
+        </button>
+      </div>
 
       {/* Hidden file input */}
       <input
@@ -734,10 +730,9 @@ const CreateDataPage = () => {
       />
 
       <div className="flex flex-wrap gap-4 mb-8">
-        <button
+        <Button
           onClick={generateMedicalReport}
           disabled={isGenerating}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
         >
           {isGenerating ? (
             <>
@@ -762,17 +757,16 @@ const CreateDataPage = () => {
               Generate Medical Report Data
             </>
           )}
-        </button>
-        <button
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+        </Button>
+        <Button
           onClick={() => {
             setShowJsonModal(true);
           }}
+          disabled={!medicalReport}
         >
           <FileJson /> View JSON Data
-        </button>
-        <button
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+        </Button>
+        <Button
           onClick={handlePrintPdf}
           disabled={!medicalReport || isGeneratingPdf}
         >
@@ -786,11 +780,10 @@ const CreateDataPage = () => {
               <FileText /> Download PDF (A4)
             </>
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleUploadPdf}
           disabled={isUploading}
-          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
         >
           {isUploading ? (
             <>
@@ -802,29 +795,7 @@ const CreateDataPage = () => {
               <Upload /> Upload File
             </>
           )}
-        </button>
-        <button
-          onClick={testAuth}
-          className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
-        >
-          🔐 Test Auth
-        </button>
-        <button
-          onClick={listUploadedFiles}
-          disabled={isLoadingFiles}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
-        >
-          {isLoadingFiles ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Loading...
-            </>
-          ) : (
-            <>
-              <File /> View Uploaded Files
-            </>
-          )}
-        </button>
+        </Button>
       </div>
 
       {/* Upload Status */}
@@ -841,6 +812,55 @@ const CreateDataPage = () => {
           {uploadStatus}
         </div>
       )}
+      <div className="mt-3">
+        {uploadedFiles?.data.files.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">
+            No files uploaded yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {uploadedFiles?.data.files.map((file) => (
+              <div
+                key={file.id}
+                className="border border-gray-200 rounded-lg p-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">
+                      {file.original_filename}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      Type: {file.file_type} • Size:{" "}
+                      {formatFileSize(file.file_size)}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Uploaded: {new Date(file.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() =>
+                        downloadFile(file.id, file.original_filename)
+                      }
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" />
+                      Download
+                    </button>
+                    <button
+                      onClick={() => deleteFile(file.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {medicalReport && (
         <div
@@ -1010,62 +1030,6 @@ const CreateDataPage = () => {
         <pre className="mt-3 text-sm bg-gray-100 p-3 rounded overflow-x-auto">
           {JSON.stringify(medicalReport, null, 2)}
         </pre>
-      </Modal>
-
-      {/* Uploaded Files Modal */}
-      <Modal
-        title="Uploaded Files"
-        isOpen={showUploadModal}
-        onClose={() => {
-          setShowUploadModal(false);
-        }}
-      >
-        <div className="mt-3">
-          {uploadedFiles.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">
-              No files uploaded yet.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {uploadedFiles.map((file) => (
-                <div
-                  key={file.id}
-                  className="border border-gray-200 rounded-lg p-3"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
-                        {file.original_filename}
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        Type: {file.file_type} • Size: {formatFileSize(file.file_size)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Uploaded: {new Date(file.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => downloadFile(file.id, file.original_filename)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
-                      >
-                        <Download className="w-3 h-3" />
-                        Download
-                      </button>
-                      <button
-                        onClick={() => deleteFile(file.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </Modal>
     </div>
   );

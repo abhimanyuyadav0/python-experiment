@@ -1,5 +1,6 @@
 "use client";
 
+import Button from "@/components/button";
 import Modal from "@/components/modal";
 import { FileJson, FileText, XIcon } from "lucide-react";
 import React, { useState, useRef } from "react";
@@ -265,32 +266,34 @@ const CreateDataPage = () => {
         )}_${medicalReport.reportDate}.pdf`,
         page: {
           margin: 10,
-          format: 'a4',
+          format: "a4",
         },
         canvas: {
           scale: 1.5,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: '#ffffff',
+          backgroundColor: "#ffffff",
         },
       };
 
       await generatePDF(reportRef, options);
-      
     } catch (error) {
       console.error("Error generating PDF:", error);
-      
+
       // Try alternative approach with minimal options
       try {
         await generatePDF(reportRef, {
-          filename: `medical_report_${medicalReport.patientName.replace(/\s+/g, "_")}_${medicalReport.reportDate}.pdf`
+          filename: `medical_report_${medicalReport.patientName.replace(
+            /\s+/g,
+            "_"
+          )}_${medicalReport.reportDate}.pdf`,
         });
       } catch (fallbackError) {
         console.error("Fallback PDF generation also failed:", fallbackError);
-        
+
         // Final fallback: Use browser print
         try {
-          const printWindow = window.open('', '_blank');
+          const printWindow = window.open("", "_blank");
           if (printWindow && reportRef.current) {
             const reportContent = reportRef.current.innerHTML;
             printWindow.document.write(`
@@ -436,15 +439,22 @@ const CreateDataPage = () => {
                     <div class="section-title">Visit Info</div>
                     <div class="info-item">
                       <span class="info-label">Doctor's Name:</span> 
-                      <span class="info-value">${medicalReport.doctorName}</span>
+                      <span class="info-value">${
+                        medicalReport.doctorName
+                      }</span>
                     </div>
                     <div class="info-item">
                       <span class="info-label">Specialization:</span> 
-                      <span class="info-value">${medicalReport.doctorSpecialty}</span>
+                      <span class="info-value">${
+                        medicalReport.doctorSpecialty
+                      }</span>
                     </div>
                     <div class="info-item">
                       <span class="info-label">Visit Date:</span> 
-                      <span class="info-value">${medicalReport.reportDate.split("-").reverse().join(".")}</span>
+                      <span class="info-value">${medicalReport.reportDate
+                        .split("-")
+                        .reverse()
+                        .join(".")}</span>
                     </div>
                   </div>
                   
@@ -454,25 +464,38 @@ const CreateDataPage = () => {
                       <div>
                         <div class="info-item">
                           <span class="info-label">Full Name:</span> 
-                          <span class="info-value">${medicalReport.patientName}</span>
+                          <span class="info-value">${
+                            medicalReport.patientName
+                          }</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">Med. Number:</span> 
-                          <span class="info-value">${medicalReport.patientId}</span>
+                          <span class="info-value">${
+                            medicalReport.patientId
+                          }</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">Phone:</span> 
-                          <span class="info-value">${medicalReport.contactNumber}</span>
+                          <span class="info-value">${
+                            medicalReport.contactNumber
+                          }</span>
                         </div>
                       </div>
                       <div>
                         <div class="info-item">
                           <span class="info-label">Birth Date:</span> 
-                          <span class="info-value">${medicalReport.dateOfBirth.split("-").reverse().join(".")}</span>
+                          <span class="info-value">${medicalReport.dateOfBirth
+                            .split("-")
+                            .reverse()
+                            .join(".")}</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">IHI:</span> 
-                          <span class="info-value">${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}</span>
+                          <span class="info-value">${
+                            Math.floor(Math.random() * 9000) + 1000
+                          }-${Math.floor(Math.random() * 9000) + 1000}-${
+              Math.floor(Math.random() * 9000) + 1000
+            }-${Math.floor(Math.random() * 9000) + 1000}</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">Email:</span> 
@@ -485,7 +508,9 @@ const CreateDataPage = () => {
                   <div class="section">
                     <div class="section-title">Assessment</div>
                     <div class="assessment-text">
-                      ${medicalReport.patientName.split(" ")[0]} ${medicalReport.patientName.split(" ")[1]} appears in good health with no immediate concerns during the examination. Based on the assessment, there are no significant issues detected, and vital signs are within normal ranges.
+                      ${medicalReport.patientName.split(" ")[0]} ${
+              medicalReport.patientName.split(" ")[1]
+            } appears in good health with no immediate concerns during the examination. Based on the assessment, there are no significant issues detected, and vital signs are within normal ranges.
                     </div>
                   </div>
                   
@@ -499,9 +524,12 @@ const CreateDataPage = () => {
                   <div class="section">
                     <div class="section-title">Prescription</div>
                     <div class="prescription-text">
-                      ${medicalReport.medications.includes("No medications") 
-                        ? "No prescription is necessary at this time, as the patient is in good health with no identified medical concerns. Given the absence of any medical issues, no medication is prescribed at present."
-                        : `Prescribed medications: ${medicalReport.medications.join(", ")}. Follow the dosage instructions as directed by your healthcare provider.`
+                      ${
+                        medicalReport.medications.includes("No medications")
+                          ? "No prescription is necessary at this time, as the patient is in good health with no identified medical concerns. Given the absence of any medical issues, no medication is prescribed at present."
+                          : `Prescribed medications: ${medicalReport.medications.join(
+                              ", "
+                            )}. Follow the dosage instructions as directed by your healthcare provider.`
                       }
                     </div>
                   </div>
@@ -515,20 +543,26 @@ const CreateDataPage = () => {
               </html>
             `);
             printWindow.document.close();
-            
+
             // Wait for content to load before printing
             setTimeout(() => {
               printWindow.print();
               printWindow.close();
             }, 500);
-            
-            alert("Print dialog opened with properly formatted medical report. Select 'Save as PDF' to download.");
+
+            alert(
+              "Print dialog opened with properly formatted medical report. Select 'Save as PDF' to download."
+            );
           } else {
-            alert("PDF generation failed. Please try again or use browser print (Ctrl+P).");
+            alert(
+              "PDF generation failed. Please try again or use browser print (Ctrl+P)."
+            );
           }
         } catch (printError) {
           console.error("Print fallback also failed:", printError);
-          alert("All PDF generation methods failed. Please use browser print (Ctrl+P) to save as PDF.");
+          alert(
+            "All PDF generation methods failed. Please use browser print (Ctrl+P) to save as PDF."
+          );
         }
       }
     } finally {
@@ -543,10 +577,9 @@ const CreateDataPage = () => {
       </h1>
 
       <div className="flex gap-4 mb-8">
-        <button
+        <Button
           onClick={generateMedicalReport}
           disabled={isGenerating}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
         >
           {isGenerating ? (
             <>
@@ -571,17 +604,15 @@ const CreateDataPage = () => {
               Generate Medical Report Data
             </>
           )}
-        </button>
-        <button
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+        </Button>
+        <Button
           onClick={() => {
             setShowJsonModal(true);
           }}
         >
           <FileJson /> View JSON Data
-        </button>
-        <button
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+        </Button>
+        <Button
           onClick={handlePrintPdf}
           disabled={!medicalReport || isGeneratingPdf}
         >
@@ -595,7 +626,7 @@ const CreateDataPage = () => {
               <FileText /> Download PDF (A4)
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       {medicalReport && (

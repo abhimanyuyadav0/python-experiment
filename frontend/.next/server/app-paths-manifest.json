@@ -1,0 +1,12 @@
+{
+  "/(admin)/admin/analytics/page": "app/(admin)/admin/analytics/page.js",
+  "/(admin)/admin/dashboard/page": "app/(admin)/admin/dashboard/page.js",
+  "/(admin)/admin/logs/page": "app/(admin)/admin/logs/page.js",
+  "/(admin)/admin/settings/page": "app/(admin)/admin/settings/page.js",
+  "/(admin)/admin/users/page": "app/(admin)/admin/users/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/auth/signup/page": "app/auth/signup/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
+}

@@ -1,0 +1,3 @@
+{
+  "/(tenant)/tenant/page": "app/(tenant)/tenant/page.js"
+}

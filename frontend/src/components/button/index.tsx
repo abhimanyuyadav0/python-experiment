@@ -60,6 +60,7 @@ const Button = ({ children, ...props }: ButtonProps) => {
       className={` ${getVariant()} ${getSize()} rounded-md flex items-center gap-2 ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
       } ${loading ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
+      onClick={onClick}
     >
       {children}
     </button>

@@ -76,6 +76,8 @@ const CreateDataPage = () => {
   const reportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<FileResponse | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedFileDetails, setUploadedFileDetails] = useState<any>(null);
   const { token } = useAuth();
 
   // Format file size
@@ -599,10 +601,6 @@ const CreateDataPage = () => {
     }
   };
 
-  const handleUploadPdf = () => {
-    fileInputRef.current?.click();
-  };
-
   const {
     data: uploadedFiles,
     isFetching: isLoadingFiles,
@@ -612,69 +610,6 @@ const CreateDataPage = () => {
     queryFn: () => getUserFiles(),
     enabled: false, // Disable initial fetch
   });
-
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    console.log("CreateDataPage: File selected:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
-
-    // Validate file type (allow common file types)
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "text/plain",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "video/mp4",
-      "audio/mpeg",
-      "application/zip",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      return;
-    }
-
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadStatus(`Uploading ${file.name}...`);
-
-    try {
-      toast.info("Starting file upload");
-      const response = await uploadFile(file);
-      toast.success("Upload successful!");
-      setUploadStatus("Upload successful!");
-
-      // Add to uploaded files list
-      refetchFiles();
-
-      // Show uploaded files modal
-    } catch (error: any) {
-      toast.error("Upload error:", error);
-      setUploadStatus(
-        `Upload failed: ${error.response?.data?.detail || "Upload failed"}`
-      );
-    } finally {
-      setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
 
   const downloadFile = async (fileId: number, filename: string) => {
     try {
@@ -723,26 +658,40 @@ const CreateDataPage = () => {
         </button>
       </div>
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.zip"
-        onChange={handleFileSelect}
-        style={{ display: "none" }}
-      />
-
       <div className="flex flex-wrap gap-4 mb-8">
         <UploadFile
           label="Upload File"
           name="file"
           type="file"
           placeholder="Upload File"
-          value={file}
-          onChange={(file) => setFile(file)}
+          value={selectedFile}
+          onChange={(file) => setSelectedFile(file)}
+          onUpload={async (file) => {
+            setIsUploading(true);
+            setUploadStatus(`Uploading ${file.name}...`);
+            try {
+              const response = await uploadFile(file);
+              setUploadStatus("Upload successful!");
+              refetchFiles();
+              return response.data; // Return the upload response data
+            } catch (error: any) {
+              toast.error("Upload failed: " + (error.response?.data?.detail || error.message));
+              setUploadStatus(`Upload failed: ${error.response?.data?.detail || "Upload failed"}`);
+              throw error; // Re-throw to let the component handle the error
+            } finally {
+              setIsUploading(false);
+            }
+          }}
+          onUploadSuccess={(fileDetails) => {
+            setUploadedFileDetails(fileDetails);
+            toast.success("File uploaded successfully!");
+          }}
+          isUploading={isUploading}
         />
         <Button
-          onClick={generateMedicalReport}
+          onClick={()=>{
+            generateMedicalReport();
+          }}
           disabled={isGenerating}
         >
           {isGenerating ? (
@@ -792,37 +741,53 @@ const CreateDataPage = () => {
             </>
           )}
         </Button>
-        <Button
-          onClick={handleUploadPdf}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Uploading...
-            </>
-          ) : (
-            <>
-              <Upload /> Upload File
-            </>
-          )}
-        </Button>
       </div>
 
-      {/* Upload Status */}
-      {uploadStatus && (
-        <div
-          className={`mb-4 p-3 rounded-lg ${
-            uploadStatus.includes("successful")
-              ? "bg-green-100 text-green-800 border border-green-200"
-              : uploadStatus.includes("failed")
-              ? "bg-red-100 text-red-800 border border-red-200"
-              : "bg-blue-100 text-blue-800 border border-blue-200"
-          }`}
-        >
-          {uploadStatus}
-        </div>
-      )}
+             {/* Upload Status */}
+       {uploadStatus && (
+         <div
+           className={`mb-4 p-3 rounded-lg ${
+             uploadStatus.includes("successful")
+               ? "bg-green-100 text-green-800 border border-green-200"
+               : uploadStatus.includes("failed")
+               ? "bg-red-100 text-red-800 border border-red-200"
+               : "bg-blue-100 text-blue-800 border border-blue-200"
+           }`}
+         >
+           {uploadStatus}
+         </div>
+       )}
+
+       {/* Uploaded File Details */}
+       {uploadedFileDetails && (
+         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+           <h3 className="text-lg font-semibold text-blue-900 mb-2">Last Uploaded File Details:</h3>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+             <div>
+               <span className="font-medium text-blue-700">File Name:</span>
+               <span className="ml-2 text-blue-900">{uploadedFileDetails.original_filename}</span>
+             </div>
+             <div>
+               <span className="font-medium text-blue-700">File Type:</span>
+               <span className="ml-2 text-blue-900">{uploadedFileDetails.file_type}</span>
+             </div>
+             <div>
+               <span className="font-medium text-blue-700">File Size:</span>
+               <span className="ml-2 text-blue-900">{formatFileSize(uploadedFileDetails.file_size)}</span>
+             </div>
+             <div>
+               <span className="font-medium text-blue-700">File ID:</span>
+               <span className="ml-2 text-blue-900">{uploadedFileDetails.id}</span>
+             </div>
+             {uploadedFileDetails.url && (
+               <div className="md:col-span-2">
+                 <span className="font-medium text-blue-700">File URL:</span>
+                 <span className="ml-2 text-blue-900 break-all">{uploadedFileDetails.url}</span>
+               </div>
+             )}
+           </div>
+         </div>
+       )}
       <div className="mt-3">
         {uploadedFiles?.data.files.length === 0 ? (
           <p className="text-gray-500 text-center py-4">

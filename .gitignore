@@ -1,6 +1,7 @@
 # python Backend
 frontend/node_modules/
 frontend/dist/
+frontend/.next/
 
 # python Backend
 # Byte-compiled / optimized / DLL files

@@ -31,13 +31,13 @@ export default function TokenExpirationCountdown() {
         const timeRemaining = tokenData.expiresAt - now;
 
         // Debug logging
-        console.log('Token Debug:', {
-          expiresAt: tokenData.expiresAt,
-          now: now,
-          timeRemaining: timeRemaining,
-          expiresAtDate: new Date(tokenData.expiresAt),
-          nowDate: new Date(now)
-        });
+        // console.log('Token Debug:', {
+        //   expiresAt: tokenData.expiresAt,
+        //   now: now,
+        //   timeRemaining: timeRemaining,
+        //   expiresAtDate: new Date(tokenData.expiresAt),
+        //   nowDate: new Date(now)
+        // });
 
         if (timeRemaining <= 0) {
           setTimeLeft('Expired');

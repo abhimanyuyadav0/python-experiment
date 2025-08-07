@@ -116,6 +116,14 @@ function TokenExpirationCountdown() {
                         const tokenData = JSON.parse(tokenDataStr);
                         const now = Date.now();
                         const timeRemaining = tokenData.expiresAt - now;
+                        // Debug logging
+                        // console.log('Token Debug:', {
+                        //   expiresAt: tokenData.expiresAt,
+                        //   now: now,
+                        //   timeRemaining: timeRemaining,
+                        //   expiresAtDate: new Date(tokenData.expiresAt),
+                        //   nowDate: new Date(now)
+                        // });
                         if (timeRemaining <= 0) {
                             setTimeLeft('Expired');
                             return;
@@ -150,7 +158,7 @@ function TokenExpirationCountdown() {
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/TokenExpirationCountdown.tsx",
-        lineNumber: 60,
+        lineNumber: 69,
         columnNumber: 5
     }, this);
 }

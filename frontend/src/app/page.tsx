@@ -5,13 +5,19 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading,isAdmin,isTenant,isUser } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading) {
       if (isAuthenticated) {
-        router.push('/dashboard');
+        if (isAdmin()) {
+          router.push('/admin/dashboard');
+        } else if (isTenant()) {
+          router.push('/tenant/dashboard');
+        } else if (isUser()) {
+          router.push('/user/dashboard');
+        }
       } else {
         router.push('/auth/login');
       }

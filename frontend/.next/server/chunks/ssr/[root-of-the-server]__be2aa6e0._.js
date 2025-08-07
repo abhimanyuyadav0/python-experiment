@@ -40,12 +40,18 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthConte
 ;
 ;
 function Home() {
-    const { isAuthenticated, isLoading } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useAuth"])();
+    const { isAuthenticated, isLoading, isAdmin, isTenant, isUser } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$AuthContext$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useAuth"])();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         if (!isLoading) {
             if (isAuthenticated) {
-                router.push('/dashboard');
+                if (isAdmin()) {
+                    router.push('/admin/dashboard');
+                } else if (isTenant()) {
+                    router.push('/tenant/dashboard');
+                } else if (isUser()) {
+                    router.push('/user/dashboard');
+                }
             } else {
                 router.push('/auth/login');
             }
@@ -61,12 +67,12 @@ function Home() {
             className: "animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"
         }, void 0, false, {
             fileName: "[project]/src/app/page.tsx",
-            lineNumber: 23,
+            lineNumber: 29,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/page.tsx",
-        lineNumber: 22,
+        lineNumber: 28,
         columnNumber: 5
     }, this);
 }

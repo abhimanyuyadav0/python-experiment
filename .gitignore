@@ -11,6 +11,7 @@ python-backend/*$py.class
 python-backend/venv/
 python-backend/venv.bak/
 python-backend/uploads/
+# node_modules/
 
 # C extensions
 python-backend/*.so

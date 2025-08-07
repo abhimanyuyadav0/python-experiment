@@ -2,9 +2,10 @@
 
 import Modal from "@/components/modal";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileJson, FileText, XIcon, Upload, File } from "lucide-react";
-import React, { useState, useRef } from "react";
+import { FileJson, FileText, XIcon, Upload, File, Download, Trash2 } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
 import generatePDF from "react-to-pdf";
+import { uploadFile, getUserFiles, deleteFile as deleteFileService, downloadFile as downloadFileService, FileResponse } from "@/lib/api/services/fileServices";
 
 interface MedicalReport {
   patientId: string;
@@ -53,11 +54,28 @@ const CreateDataPage = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>("");
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<FileResponse[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { token } = useAuth();
+
+  // Load files on component mount
+  useEffect(() => {
+    if (token) {
+      listUploadedFiles();
+    }
+  }, [token]);
+
+  // Format file size
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const generateRandomName = () => {
     const firstNames = [
@@ -582,10 +600,7 @@ const CreateDataPage = () => {
   };
 
   const handleUploadPdf = () => {
-    // Trigger file input click
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+    fileInputRef.current?.click();
   };
 
   const handleFileSelect = async (
@@ -594,9 +609,23 @@ const CreateDataPage = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (file.type !== "application/pdf") {
-      alert("Please select a PDF file only.");
+    // Validate file type (allow common file types)
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'video/mp4',
+      'audio/mpeg',
+      'application/zip'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert("Please select a supported file type (PDF, DOC, DOCX, TXT, Images, Videos, Audio, or Archives).");
       return;
     }
 
@@ -607,53 +636,25 @@ const CreateDataPage = () => {
     }
 
     setIsUploading(true);
-    setUploadStatus("Uploading PDF...");
+    setUploadStatus(`Uploading ${file.name}...`);
 
     try {
-      if (!token) {
-        alert("Please login first to upload files.");
-        setIsUploading(false);
-        return;
-      }
+      const response = await uploadFile(file);
+      setUploadStatus("Upload successful!");
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append(
-        "description",
-        `Medical report uploaded on ${new Date().toLocaleDateString()}`
-      );
+      // Add to uploaded files list
+      setUploadedFiles((prev) => [...prev, response.data.file]);
 
-      const response = await fetch("http://localhost:5001/api/v1/upload/pdf", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      // Show success message
+      alert(`${file.name} uploaded successfully!\nFile URL: ${response.data.file.url}`);
 
-      if (response.ok) {
-        const result = await response.json();
-        setUploadStatus("Upload successful!");
-
-        // Add to uploaded files list
-        setUploadedFiles((prev) => [...prev, result]);
-
-        // Show success message
-        alert(`PDF uploaded successfully!\nFile URL: ${result.file_url}`);
-
-        // Show uploaded files modal
-        setShowUploadModal(true);
-      } else {
-        const errorData = await response.json();
-        setUploadStatus(
-          `Upload failed: ${errorData.detail || "Unknown error"}`
-        );
-        alert(`Upload failed: ${errorData.detail || "Unknown error"}`);
-      }
-    } catch (error) {
+      // Show uploaded files modal
+      setShowUploadModal(true);
+    } catch (error: any) {
       console.error("Upload error:", error);
-      setUploadStatus("Upload failed: Network error");
-      alert("Upload failed: Network error. Please check your connection.");
+      const errorMessage = error.response?.data?.detail || "Upload failed";
+      setUploadStatus(`Upload failed: ${errorMessage}`);
+      alert(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -664,77 +665,56 @@ const CreateDataPage = () => {
   };
 
   const listUploadedFiles = async () => {
+    setIsLoadingFiles(true);
     try {
-      const token =
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("access_token");
-
-      if (!token) {
-        alert("Please login first to view files.");
-        return;
-      }
-
-      const response = await fetch(
-        "http://localhost:8000/api/v1/upload/files",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        setUploadedFiles(result.files);
-        setShowUploadModal(true);
-      } else {
-        alert("Failed to fetch uploaded files.");
-      }
-    } catch (error) {
+      const response = await getUserFiles();
+      setUploadedFiles(response.data.files);
+      setShowUploadModal(true);
+    } catch (error: any) {
       console.error("Error fetching files:", error);
-      alert("Failed to fetch uploaded files.");
+      const errorMessage = error.response?.data?.detail || "Failed to fetch uploaded files";
+      alert(errorMessage);
+    } finally {
+      setIsLoadingFiles(false);
     }
   };
 
-  const downloadFile = (fileUrl: string) => {
-    window.open(fileUrl, "_blank");
+  const downloadFile = async (fileId: number, filename: string) => {
+    try {
+      const response = await downloadFileService(fileId);
+      
+      // Create blob and download
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error("Error downloading file:", error);
+      const errorMessage = error.response?.data?.detail || "Failed to download file";
+      alert(errorMessage);
+    }
   };
 
-  const deleteFile = async (filename: string) => {
+  const deleteFile = async (fileId: number) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
 
     try {
-      const token =
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("access_token");
-
-      if (!token) {
-        alert("Please login first to delete files.");
-        return;
-      }
-
-      const response = await fetch(
-        `http://localhost:8000/api/v1/upload/files/${filename}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await deleteFileService(fileId);
+      
+      // Remove from uploaded files list
+      setUploadedFiles((prev) =>
+        prev.filter((file) => file.id !== fileId)
       );
-
-      if (response.ok) {
-        // Remove from uploaded files list
-        setUploadedFiles((prev) =>
-          prev.filter((file) => file.filename !== filename)
-        );
-        alert("File deleted successfully!");
-      } else {
-        alert("Failed to delete file.");
-      }
-    } catch (error) {
+      alert("File deleted successfully!");
+    } catch (error: any) {
       console.error("Error deleting file:", error);
-      alert("Failed to delete file.");
+      const errorMessage = error.response?.data?.detail || "Failed to delete file";
+      alert(errorMessage);
     }
   };
 
@@ -748,12 +728,12 @@ const CreateDataPage = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf"
+        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.zip"
         onChange={handleFileSelect}
         style={{ display: "none" }}
       />
 
-      <div className="flex gap-4 mb-8">
+      <div className="flex flex-wrap gap-4 mb-8">
         <button
           onClick={generateMedicalReport}
           disabled={isGenerating}
@@ -819,15 +799,25 @@ const CreateDataPage = () => {
             </>
           ) : (
             <>
-              <Upload /> Upload PDF
+              <Upload /> Upload File
             </>
           )}
         </button>
         <button
           onClick={listUploadedFiles}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+          disabled={isLoadingFiles}
+          className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
         >
-          <File /> View Uploaded Files
+          {isLoadingFiles ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              Loading...
+            </>
+          ) : (
+            <>
+              <File /> View Uploaded Files
+            </>
+          )}
         </button>
       </div>
 
@@ -1031,35 +1021,36 @@ const CreateDataPage = () => {
             </p>
           ) : (
             <div className="space-y-3">
-              {uploadedFiles.map((file, index) => (
+              {uploadedFiles.map((file) => (
                 <div
-                  key={index}
+                  key={file.id}
                   className="border border-gray-200 rounded-lg p-3"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">
-                        {file.filename}
+                        {file.original_filename}
                       </h4>
                       <p className="text-sm text-gray-500">
-                        Size: {(file.file_size / 1024).toFixed(1)} KB
+                        Type: {file.file_type} • Size: {formatFileSize(file.file_size)}
                       </p>
                       <p className="text-sm text-gray-500">
-                        Uploaded:{" "}
-                        {new Date(file.uploaded_at).toLocaleDateString()}
+                        Uploaded: {new Date(file.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex gap-2 ml-4">
                       <button
-                        onClick={() => downloadFile(file.file_url)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                        onClick={() => downloadFile(file.id, file.original_filename)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
                       >
+                        <Download className="w-3 h-3" />
                         Download
                       </button>
                       <button
-                        onClick={() => deleteFile(file.filename)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                        onClick={() => deleteFile(file.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
                       >
+                        <Trash2 className="w-3 h-3" />
                         Delete
                       </button>
                     </div>

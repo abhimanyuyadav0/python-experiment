@@ -13,10 +13,10 @@ interface ModalProps {
 }
 
 const sizeClasses = {
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
-  xl: "max-w-2xl",
+  sm: "max-w-md",
+  md: "max-w-2xl",
+  lg: "max-w-4xl",
+  xl: "max-w-6xl",
 };
 
 const Modal: React.FC<ModalProps> = ({
@@ -50,7 +50,7 @@ const Modal: React.FC<ModalProps> = ({
             )}
           </div>
         )}
-        <div>{children}</div>
+        <div className="overflow-y-auto max-h-[80vh]">{children}</div>
       </div>
     </div>
   );

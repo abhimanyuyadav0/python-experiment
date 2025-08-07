@@ -143,7 +143,7 @@ const UploadFile = ({
         ) : (
           <>
             <Upload className="w-4 h-4" />
-            {value ? value.name : label}
+            {label}
           </>
         )}
       </Button>
@@ -161,7 +161,7 @@ const UploadFile = ({
           <h2 className="text-xl font-semibold mb-4">Upload File</h2>
 
           <div
-            className="space-y-4"
+            className="space-y-4 cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
@@ -178,7 +178,7 @@ const UploadFile = ({
               name={name}
               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.zip"
               onChange={handleFileSelect}
-              className="w-full"
+              className="w-full hidden"
             />
           </div>
           {value && !isUploadingInModal && !uploadResult && (

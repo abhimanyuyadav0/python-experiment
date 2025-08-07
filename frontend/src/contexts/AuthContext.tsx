@@ -58,7 +58,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,28 +70,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const tokenDataString = JSON.stringify(tokenData);
     localStorage.setItem("tokenData", tokenDataString);
     setToken(token);
+    console.log("AuthContext: Token saved", { token: token.substring(0, 20) + "...", expiresAt });
   };
 
   const getToken = (): string | null => {
     const tokenDataStr = localStorage.getItem("tokenData");
-    if (!tokenDataStr) return null;
-    // alert(tokenDataStr);
+    if (!tokenDataStr) {
+      console.log("AuthContext: No token data found");
+      return null;
+    }
 
     try {
       const tokenData: TokenData = JSON.parse(tokenDataStr);
       const now = Date.now();
-      const timeRemaining = now - tokenData.expiresAt;
-      const isExpired = timeRemaining <= 0;
+      const isExpired = now >= tokenData.expiresAt;
+
+      console.log("AuthContext: Token check", {
+        now,
+        expiresAt: tokenData.expiresAt,
+        timeLeft: tokenData.expiresAt - now,
+        isExpired
+      });
 
       if (isExpired) {
-        alert("Token expired");
+        console.log("AuthContext: Token expired");
         localStorage.removeItem("tokenData");
         localStorage.removeItem("user");
         return null;
       }
+      console.log("AuthContext: Token retrieved successfully");
       return tokenData.token;
     } catch (error) {
-      console.error("Error parsing token data:", error);
+      console.error("AuthContext: Error parsing token data:", error);
       localStorage.removeItem("tokenData");
       return null;
     }
@@ -107,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in on app start
+    console.log("AuthContext: Initializing on app start");
     const currentToken = getToken();
     const userData = localStorage.getItem("user");
     if (currentToken && userData) {
@@ -114,8 +125,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
         setToken(currentToken);
+        console.log("AuthContext: User restored from localStorage");
       } catch (error) {
-        console.error("Error parsing user data:", error);
+        console.error("AuthContext: Error parsing user data:", error);
         clearToken();
       }
     } else {
@@ -153,9 +165,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.data) {
         const { user: userData, token, expires_at } = response.data;
-        console.log("login: Received response", {
+        console.log("AuthContext: Login successful", {
           userData,
-          token: token,
+          token: token ? token.substring(0, 20) + "..." : "null",
           expires_at,
         });
 
@@ -167,7 +179,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         redirectToDashboard(userData.role);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("AuthContext: Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);

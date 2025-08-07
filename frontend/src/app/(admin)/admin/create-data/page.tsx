@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FileJson, FileText, XIcon, Upload, File, Download, Trash2 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import generatePDF from "react-to-pdf";
-import { uploadFile, getUserFiles, deleteFile as deleteFileService, downloadFile as downloadFileService, FileResponse } from "@/lib/api/services/fileServices";
+import { uploadFile, getUserFiles, deleteFile as deleteFileService, downloadFile as downloadFileService, FileResponse, testFileAuth } from "@/lib/api/services/fileServices";
 
 interface MedicalReport {
   patientId: string;
@@ -63,6 +63,7 @@ const CreateDataPage = () => {
 
   // Load files on component mount
   useEffect(() => {
+    console.log("CreateDataPage: useEffect triggered, token:", token ? "exists" : "null");
     if (token) {
       listUploadedFiles();
     }
@@ -609,6 +610,12 @@ const CreateDataPage = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log("CreateDataPage: File selected:", {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
     // Validate file type (allow common file types)
     const allowedTypes = [
       'application/pdf',
@@ -639,7 +646,9 @@ const CreateDataPage = () => {
     setUploadStatus(`Uploading ${file.name}...`);
 
     try {
+      console.log("CreateDataPage: Starting file upload");
       const response = await uploadFile(file);
+      console.log("CreateDataPage: Upload response:", response);
       setUploadStatus("Upload successful!");
 
       // Add to uploaded files list
@@ -651,7 +660,7 @@ const CreateDataPage = () => {
       // Show uploaded files modal
       setShowUploadModal(true);
     } catch (error: any) {
-      console.error("Upload error:", error);
+      console.error("CreateDataPage: Upload error:", error);
       const errorMessage = error.response?.data?.detail || "Upload failed";
       setUploadStatus(`Upload failed: ${errorMessage}`);
       alert(`Upload failed: ${errorMessage}`);
@@ -665,13 +674,15 @@ const CreateDataPage = () => {
   };
 
   const listUploadedFiles = async () => {
+    console.log("CreateDataPage: listUploadedFiles called");
     setIsLoadingFiles(true);
     try {
       const response = await getUserFiles();
+      console.log("CreateDataPage: getUserFiles response:", response);
       setUploadedFiles(response.data.files);
       setShowUploadModal(true);
     } catch (error: any) {
-      console.error("Error fetching files:", error);
+      console.error("CreateDataPage: Error fetching files:", error);
       const errorMessage = error.response?.data?.detail || "Failed to fetch uploaded files";
       alert(errorMessage);
     } finally {
@@ -714,6 +725,19 @@ const CreateDataPage = () => {
     } catch (error: any) {
       console.error("Error deleting file:", error);
       const errorMessage = error.response?.data?.detail || "Failed to delete file";
+      alert(errorMessage);
+    }
+  };
+
+  const testAuth = async () => {
+    try {
+      console.log("CreateDataPage: Testing file authentication");
+      const response = await testFileAuth();
+      console.log("CreateDataPage: Auth test successful:", response.data);
+      alert("Authentication test successful!");
+    } catch (error: any) {
+      console.error("CreateDataPage: Auth test failed:", error);
+      const errorMessage = error.response?.data?.detail || "Authentication test failed";
       alert(errorMessage);
     }
   };
@@ -802,6 +826,12 @@ const CreateDataPage = () => {
               <Upload /> Upload File
             </>
           )}
+        </button>
+        <button
+          onClick={testAuth}
+          className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+        >
+          🔐 Test Auth
         </button>
         <button
           onClick={listUploadedFiles}

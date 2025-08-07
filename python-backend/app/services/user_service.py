@@ -7,6 +7,8 @@ import jwt
 import hashlib
 from datetime import datetime, timedelta
 from typing import List, Optional
+from fastapi import Depends, HTTPException, status, Header
+from app.core.database import get_db
 
 def hash_password(password: str) -> str:
     """Hash password using SHA-256"""
@@ -26,14 +28,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
     
     current_time = datetime.utcnow()
-    print(f"🔐 Token Debug: ACCESS_TOKEN_EXPIRE_MINUTES = {ACCESS_TOKEN_EXPIRE_MINUTES}")
-    print(f"🔐 Token Debug: Current time (UTC) = {current_time}")
-    print(f"🔐 Token Debug: Expire time (UTC) = {expire}")
-    print(f"🔐 Token Debug: Current timestamp (seconds) = {current_time.timestamp()}")
-    print(f"🔐 Token Debug: Current timestamp (ms) = {int(current_time.timestamp() * 1000)}")
-    print(f"🔐 Token Debug: Expire timestamp (seconds) = {expire.timestamp()}")
-    print(f"🔐 Token Debug: Expire timestamp (ms) = {int(expire.timestamp() * 1000)}")
-    print(f"🔐 Token Debug: Time difference (ms) = {int(expire.timestamp() * 1000) - int(current_time.timestamp() * 1000)}")
     
     to_encode.update({
         "exp": expire,
@@ -43,16 +37,20 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     expire_timestamp_ms = int(expire.timestamp() * 1000)
+    print(f"🔐 create_access_token: Token created with expiration: {expire_timestamp_ms}")
     return encoded_jwt, expire_timestamp_ms
 
 def verify_token(token: str) -> Optional[dict]:
     """Verify JWT token and return payload if valid"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"🔐 verify_token: Token verified successfully, payload: {payload}")
         return payload
     except jwt.ExpiredSignatureError:
+        print("🔐 verify_token: Token expired")
         return None
-    except jwt.JWTError:
+    except jwt.JWTError as e:
+        print(f"🔐 verify_token: JWT error: {e}")
         return None
 
 def create_user(db: Session, user: UserCreate) -> User:
@@ -97,13 +95,22 @@ def update_user_role(db: Session, user_id: int, new_role: UserRole) -> Optional[
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """Authenticate user with email and password"""
+    print(f"🔐 authenticate_user: Attempting authentication for email: {email}")
     user = get_user_by_email(db, email)
     if not user:
+        print(f"🔐 authenticate_user: User not found for email: {email}")
         return None
+    print(f"🔐 authenticate_user: User found - ID: {user.id}, Email: {user.email}, Active: {user.is_active}")
+    
     if not verify_password(password, user.password):
+        print(f"🔐 authenticate_user: Password verification failed for user: {email}")
         return None
-    if not user.is_active:
+    
+    if user.is_active != 1:
+        print(f"🔐 authenticate_user: User is not active: {email}, is_active: {user.is_active}")
         return None
+    
+    print(f"🔐 authenticate_user: Authentication successful for user: {email}")
     return user
 
 def delete_user(db: Session, user_id: int) -> bool:
@@ -114,3 +121,53 @@ def delete_user(db: Session, user_id: int) -> bool:
         db.commit()
         return True
     return False
+
+def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)) -> User:
+    """Get current authenticated user from token"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    print(f"🔐 get_current_user: Authorization header: {authorization}")
+    
+    if not authorization:
+        print("🔐 get_current_user: No authorization header")
+        raise credentials_exception
+    
+    try:
+        # Extract token from Authorization header
+        if not authorization.startswith("Bearer "):
+            print("🔐 get_current_user: Authorization header doesn't start with 'Bearer '")
+            raise credentials_exception
+        token = authorization.split(" ")[1]
+        print(f"🔐 get_current_user: Extracted token: {token[:20]}...")
+        
+        # Verify token
+        payload = verify_token(token)
+        if payload is None:
+            print("🔐 get_current_user: Token verification failed")
+            raise credentials_exception
+        
+        print(f"🔐 get_current_user: Token payload: {payload}")
+        
+        # Get user email from token
+        email: str = payload.get("sub")
+        if email is None:
+            print("🔐 get_current_user: No 'sub' field in token payload")
+            raise credentials_exception
+        
+        print(f"🔐 get_current_user: User email from token: {email}")
+        
+        # Get user from database
+        user = get_user_by_email(db, email=email)
+        if user is None:
+            print("🔐 get_current_user: User not found in database")
+            raise credentials_exception
+        
+        print(f"🔐 get_current_user: User found: {user.email}")
+        return user
+    except Exception as e:
+        print(f"🔐 get_current_user: Exception: {e}")
+        raise credentials_exception

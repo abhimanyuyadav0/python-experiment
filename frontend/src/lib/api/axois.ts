@@ -14,12 +14,25 @@ axoisInstance.interceptors.request.use(
     if (tokenDataStr) {
       try {
         const tokenData = JSON.parse(tokenDataStr);
-        if (Date.now() <= tokenData.expiresAt) {
+        const now = Date.now();
+        console.log("Axios interceptor: Token check", {
+          now,
+          expiresAt: tokenData.expiresAt,
+          timeLeft: tokenData.expiresAt - now,
+          isExpired: now >= tokenData.expiresAt
+        });
+        
+        if (now < tokenData.expiresAt) {
           config.headers.Authorization = `Bearer ${tokenData.token}`;
+          console.log("Axios interceptor: Added Authorization header");
+        } else {
+          console.log("Axios interceptor: Token expired, not adding header");
         }
       } catch (error) {
         console.error('Error parsing token data:', error);
       }
+    } else {
+      console.log("Axios interceptor: No token data found");
     }
     return config;
   },

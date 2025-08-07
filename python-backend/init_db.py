@@ -32,7 +32,7 @@ def init_database():
                 email="admin@example.com",
                 password=hash_password("admin123"),
                 role=UserRole.admin,
-                is_active=True
+                is_active=1
             )
             db.add(admin_user)
             print("✅ Admin user created!")
@@ -48,7 +48,7 @@ def init_database():
                 email="tenant@example.com",
                 password=hash_password("tenant123"),
                 role=UserRole.tenant,
-                is_active=True
+                is_active=1
             )
             db.add(tenant_user)
             print("✅ Tenant user created!")
@@ -64,7 +64,7 @@ def init_database():
                 email="user@example.com",
                 password=hash_password("user123"),
                 role=UserRole.user,
-                is_active=True
+                is_active=1
             )
             db.add(regular_user)
             print("✅ Regular user created!")

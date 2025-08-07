@@ -1,8 +1,7 @@
 "use client";
 
 import Modal from "@/components/modal";
-import { useAuth } from "@/contexts/AuthContext";
-import { FileJson, FileText, XIcon, Upload, File } from "lucide-react";
+import { FileJson, FileText, XIcon } from "lucide-react";
 import React, { useState, useRef } from "react";
 import generatePDF from "react-to-pdf";
 
@@ -51,13 +50,7 @@ const CreateDataPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string>("");
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { token } = useAuth();
 
   const generateRandomName = () => {
     const firstNames = [
@@ -272,39 +265,37 @@ const CreateDataPage = () => {
         )}_${medicalReport.reportDate}.pdf`,
         page: {
           margin: 10,
-          format: "a4",
+          format: 'a4',
         },
         canvas: {
           scale: 1.5,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: "#ffffff",
+          backgroundColor: '#ffffff',
         },
       };
 
-      console.log("Starting PDF generation with options:", options);
+      console.log('Starting PDF generation with options:', options);
       await generatePDF(reportRef, options);
-      console.log("PDF generated successfully");
+      console.log('PDF generated successfully');
+      
     } catch (error) {
       console.error("Error generating PDF:", error);
-
+      
       // Try alternative approach with minimal options
       try {
-        console.log("Trying alternative PDF generation approach...");
+        console.log('Trying alternative PDF generation approach...');
         await generatePDF(reportRef, {
-          filename: `medical_report_${medicalReport.patientName.replace(
-            /\s+/g,
-            "_"
-          )}_${medicalReport.reportDate}.pdf`,
+          filename: `medical_report_${medicalReport.patientName.replace(/\s+/g, "_")}_${medicalReport.reportDate}.pdf`
         });
-        console.log("Alternative PDF generation successful");
+        console.log('Alternative PDF generation successful');
       } catch (fallbackError) {
         console.error("Fallback PDF generation also failed:", fallbackError);
-
+        
         // Final fallback: Use browser print
         try {
-          console.log("Trying browser print as final fallback...");
-          const printWindow = window.open("", "_blank");
+          console.log('Trying browser print as final fallback...');
+          const printWindow = window.open('', '_blank');
           if (printWindow && reportRef.current) {
             const reportContent = reportRef.current.innerHTML;
             printWindow.document.write(`
@@ -450,22 +441,15 @@ const CreateDataPage = () => {
                     <div class="section-title">Visit Info</div>
                     <div class="info-item">
                       <span class="info-label">Doctor's Name:</span> 
-                      <span class="info-value">${
-                        medicalReport.doctorName
-                      }</span>
+                      <span class="info-value">${medicalReport.doctorName}</span>
                     </div>
                     <div class="info-item">
                       <span class="info-label">Specialization:</span> 
-                      <span class="info-value">${
-                        medicalReport.doctorSpecialty
-                      }</span>
+                      <span class="info-value">${medicalReport.doctorSpecialty}</span>
                     </div>
                     <div class="info-item">
                       <span class="info-label">Visit Date:</span> 
-                      <span class="info-value">${medicalReport.reportDate
-                        .split("-")
-                        .reverse()
-                        .join(".")}</span>
+                      <span class="info-value">${medicalReport.reportDate.split("-").reverse().join(".")}</span>
                     </div>
                   </div>
                   
@@ -475,38 +459,25 @@ const CreateDataPage = () => {
                       <div>
                         <div class="info-item">
                           <span class="info-label">Full Name:</span> 
-                          <span class="info-value">${
-                            medicalReport.patientName
-                          }</span>
+                          <span class="info-value">${medicalReport.patientName}</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">Med. Number:</span> 
-                          <span class="info-value">${
-                            medicalReport.patientId
-                          }</span>
+                          <span class="info-value">${medicalReport.patientId}</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">Phone:</span> 
-                          <span class="info-value">${
-                            medicalReport.contactNumber
-                          }</span>
+                          <span class="info-value">${medicalReport.contactNumber}</span>
                         </div>
                       </div>
                       <div>
                         <div class="info-item">
                           <span class="info-label">Birth Date:</span> 
-                          <span class="info-value">${medicalReport.dateOfBirth
-                            .split("-")
-                            .reverse()
-                            .join(".")}</span>
+                          <span class="info-value">${medicalReport.dateOfBirth.split("-").reverse().join(".")}</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">IHI:</span> 
-                          <span class="info-value">${
-                            Math.floor(Math.random() * 9000) + 1000
-                          }-${Math.floor(Math.random() * 9000) + 1000}-${
-              Math.floor(Math.random() * 9000) + 1000
-            }-${Math.floor(Math.random() * 9000) + 1000}</span>
+                          <span class="info-value">${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}</span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">Email:</span> 
@@ -519,9 +490,7 @@ const CreateDataPage = () => {
                   <div class="section">
                     <div class="section-title">Assessment</div>
                     <div class="assessment-text">
-                      ${medicalReport.patientName.split(" ")[0]} ${
-              medicalReport.patientName.split(" ")[1]
-            } appears in good health with no immediate concerns during the examination. Based on the assessment, there are no significant issues detected, and vital signs are within normal ranges.
+                      ${medicalReport.patientName.split(" ")[0]} ${medicalReport.patientName.split(" ")[1]} appears in good health with no immediate concerns during the examination. Based on the assessment, there are no significant issues detected, and vital signs are within normal ranges.
                     </div>
                   </div>
                   
@@ -535,12 +504,9 @@ const CreateDataPage = () => {
                   <div class="section">
                     <div class="section-title">Prescription</div>
                     <div class="prescription-text">
-                      ${
-                        medicalReport.medications.includes("No medications")
-                          ? "No prescription is necessary at this time, as the patient is in good health with no identified medical concerns. Given the absence of any medical issues, no medication is prescribed at present."
-                          : `Prescribed medications: ${medicalReport.medications.join(
-                              ", "
-                            )}. Follow the dosage instructions as directed by your healthcare provider.`
+                      ${medicalReport.medications.includes("No medications") 
+                        ? "No prescription is necessary at this time, as the patient is in good health with no identified medical concerns. Given the absence of any medical issues, no medication is prescribed at present."
+                        : `Prescribed medications: ${medicalReport.medications.join(", ")}. Follow the dosage instructions as directed by your healthcare provider.`
                       }
                     </div>
                   </div>
@@ -554,187 +520,24 @@ const CreateDataPage = () => {
               </html>
             `);
             printWindow.document.close();
-
+            
             // Wait for content to load before printing
             setTimeout(() => {
               printWindow.print();
               printWindow.close();
             }, 500);
-
-            alert(
-              "Print dialog opened with properly formatted medical report. Select 'Save as PDF' to download."
-            );
+            
+            alert("Print dialog opened with properly formatted medical report. Select 'Save as PDF' to download.");
           } else {
-            alert(
-              "PDF generation failed. Please try again or use browser print (Ctrl+P)."
-            );
+            alert("PDF generation failed. Please try again or use browser print (Ctrl+P).");
           }
         } catch (printError) {
           console.error("Print fallback also failed:", printError);
-          alert(
-            "All PDF generation methods failed. Please use browser print (Ctrl+P) to save as PDF."
-          );
+          alert("All PDF generation methods failed. Please use browser print (Ctrl+P) to save as PDF.");
         }
       }
     } finally {
       setIsGeneratingPdf(false);
-    }
-  };
-
-  const handleUploadPdf = () => {
-    // Trigger file input click
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (file.type !== "application/pdf") {
-      alert("Please select a PDF file only.");
-      return;
-    }
-
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB.");
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadStatus("Uploading PDF...");
-
-    try {
-      if (!token) {
-        alert("Please login first to upload files.");
-        setIsUploading(false);
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append(
-        "description",
-        `Medical report uploaded on ${new Date().toLocaleDateString()}`
-      );
-
-      const response = await fetch("http://localhost:5001/api/v1/upload/pdf", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setUploadStatus("Upload successful!");
-
-        // Add to uploaded files list
-        setUploadedFiles((prev) => [...prev, result]);
-
-        // Show success message
-        alert(`PDF uploaded successfully!\nFile URL: ${result.file_url}`);
-
-        // Show uploaded files modal
-        setShowUploadModal(true);
-      } else {
-        const errorData = await response.json();
-        setUploadStatus(
-          `Upload failed: ${errorData.detail || "Unknown error"}`
-        );
-        alert(`Upload failed: ${errorData.detail || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      setUploadStatus("Upload failed: Network error");
-      alert("Upload failed: Network error. Please check your connection.");
-    } finally {
-      setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const listUploadedFiles = async () => {
-    try {
-      const token =
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("access_token");
-
-      if (!token) {
-        alert("Please login first to view files.");
-        return;
-      }
-
-      const response = await fetch(
-        "http://localhost:8000/api/v1/upload/files",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        setUploadedFiles(result.files);
-        setShowUploadModal(true);
-      } else {
-        alert("Failed to fetch uploaded files.");
-      }
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      alert("Failed to fetch uploaded files.");
-    }
-  };
-
-  const downloadFile = (fileUrl: string) => {
-    window.open(fileUrl, "_blank");
-  };
-
-  const deleteFile = async (filename: string) => {
-    if (!confirm("Are you sure you want to delete this file?")) return;
-
-    try {
-      const token =
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("access_token");
-
-      if (!token) {
-        alert("Please login first to delete files.");
-        return;
-      }
-
-      const response = await fetch(
-        `http://localhost:8000/api/v1/upload/files/${filename}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        // Remove from uploaded files list
-        setUploadedFiles((prev) =>
-          prev.filter((file) => file.filename !== filename)
-        );
-        alert("File deleted successfully!");
-      } else {
-        alert("Failed to delete file.");
-      }
-    } catch (error) {
-      console.error("Error deleting file:", error);
-      alert("Failed to delete file.");
     }
   };
 
@@ -743,15 +546,6 @@ const CreateDataPage = () => {
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
         Medical Report Data Generator
       </h1>
-
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf"
-        onChange={handleFileSelect}
-        style={{ display: "none" }}
-      />
 
       <div className="flex gap-4 mb-8">
         <button
@@ -807,44 +601,7 @@ const CreateDataPage = () => {
             </>
           )}
         </button>
-        <button
-          onClick={handleUploadPdf}
-          disabled={isUploading}
-          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
-        >
-          {isUploading ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Uploading...
-            </>
-          ) : (
-            <>
-              <Upload /> Upload PDF
-            </>
-          )}
-        </button>
-        <button
-          onClick={listUploadedFiles}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
-        >
-          <File /> View Uploaded Files
-        </button>
       </div>
-
-      {/* Upload Status */}
-      {uploadStatus && (
-        <div
-          className={`mb-4 p-3 rounded-lg ${
-            uploadStatus.includes("successful")
-              ? "bg-green-100 text-green-800 border border-green-200"
-              : uploadStatus.includes("failed")
-              ? "bg-red-100 text-red-800 border border-red-200"
-              : "bg-blue-100 text-blue-800 border border-blue-200"
-          }`}
-        >
-          {uploadStatus}
-        </div>
-      )}
 
       {medicalReport && (
         <div
@@ -1003,7 +760,6 @@ const CreateDataPage = () => {
         </div>
       )}
 
-      {/* JSON Data Modal */}
       <Modal
         title="View JSON Data"
         isOpen={showJsonModal}
@@ -1014,61 +770,6 @@ const CreateDataPage = () => {
         <pre className="mt-3 text-sm bg-gray-100 p-3 rounded overflow-x-auto">
           {JSON.stringify(medicalReport, null, 2)}
         </pre>
-      </Modal>
-
-      {/* Uploaded Files Modal */}
-      <Modal
-        title="Uploaded Files"
-        isOpen={showUploadModal}
-        onClose={() => {
-          setShowUploadModal(false);
-        }}
-      >
-        <div className="mt-3">
-          {uploadedFiles.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">
-              No files uploaded yet.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {uploadedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-lg p-3"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
-                        {file.filename}
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        Size: {(file.file_size / 1024).toFixed(1)} KB
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Uploaded:{" "}
-                        {new Date(file.uploaded_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => downloadFile(file.file_url)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-                      >
-                        Download
-                      </button>
-                      <button
-                        onClick={() => deleteFile(file.filename)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </Modal>
     </div>
   );

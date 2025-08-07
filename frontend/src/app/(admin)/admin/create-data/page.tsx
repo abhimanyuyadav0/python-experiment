@@ -2,7 +2,8 @@
 
 import Modal from "@/components/modal";
 import { FileJson, FileText, XIcon } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import generatePDF from "react-to-pdf";
 
 interface MedicalReport {
   patientId: string;
@@ -48,51 +49,94 @@ const CreateDataPage = () => {
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [showJsonModal, setShowJsonModal] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const generateRandomName = () => {
     const firstNames = [
-      "John",
-      "Jane",
-      "Michael",
-      "Sarah",
-      "David",
-      "Emily",
-      "Robert",
-      "Lisa",
-      "James",
-      "Maria",
-      "William",
-      "Jennifer",
-      "Richard",
-      "Linda",
-      "Thomas",
-      "Patricia",
-      "Christopher",
-      "Barbara",
-      "Daniel",
-      "Elizabeth",
+      "Amit",
+      "Pooja",
+      "Rahul",
+      "Anjali",
+      "Vikas",
+      "Shivani",
+      "Rakesh",
+      "Neha",
+      "Sanjay",
+      "Priya",
+      "Arjun",
+      "Kavita",
+      "Manoj",
+      "Ritu",
+      "Deepak",
+      "Suman",
+      "Ashok",
+      "Meena",
+      "Vivek",
+      "Shalini",
+      "Rohit",
+      "Swati",
+      "Aditya",
+      "Nisha",
+      "Pradeep",
+      "Reena",
+      "Saurabh",
+      "Komal",
+      "Vinod",
+      "Anita",
+      "Gaurav",
+      "Jyoti",
+      "Sunil",
+      "Preeti",
+      "Ajay",
+      "Sonam",
+      "Naveen",
+      "Monika",
+      "Alok",
+      "Seema",
     ];
+
     const lastNames = [
-      "Smith",
-      "Johnson",
-      "Williams",
-      "Brown",
-      "Jones",
-      "Garcia",
-      "Miller",
-      "Davis",
-      "Rodriguez",
-      "Martinez",
-      "Hernandez",
-      "Lopez",
-      "Gonzalez",
-      "Wilson",
-      "Anderson",
-      "Thomas",
-      "Taylor",
-      "Moore",
-      "Jackson",
-      "Martin",
+      "Yadav",
+      "Singh",
+      "Verma",
+      "Sharma",
+      "Gupta",
+      "Mishra",
+      "Pandey",
+      "Khan",
+      "Chauhan",
+      "Patel",
+      "Tiwari",
+      "Maurya",
+      "Srivastava",
+      "Rathore",
+      "Dubey",
+      "Jaiswal",
+      "Pal",
+      "Tripathi",
+      "Kumar",
+      "Rai",
+      "Dwivedi",
+      "Bajpai",
+      "Ansari",
+      "Siddiqui",
+      "Kushwaha",
+      "Pathak",
+      "Nigam",
+      "Qureshi",
+      "Bind",
+      "Shukla",
+      "Saini",
+      "Agrawal",
+      "Vishwakarma",
+      "Prajapati",
+      "Rawat",
+      "Malik",
+      "Choudhary",
+      "Gaur",
+      "Bharti",
+      "Upadhyay",
     ];
 
     return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
@@ -207,8 +251,91 @@ const CreateDataPage = () => {
     }, 1500);
   };
 
-  const handlePrintPdf = () => {
-    console.log("Printing PDF");
+  const handlePrintPdf = async () => {
+    if (!medicalReport || !reportRef.current) return;
+
+    setIsGeneratingPdf(true);
+
+    try {
+      // Simple configuration that should work reliably
+      const options = {
+        filename: `medical_report_${medicalReport.patientName.replace(
+          /\s+/g,
+          "_"
+        )}_${medicalReport.reportDate}.pdf`,
+        page: {
+          margin: 10,
+          format: 'a4',
+        },
+        canvas: {
+          scale: 1.5,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+        },
+      };
+
+      console.log('Starting PDF generation with options:', options);
+      await generatePDF(reportRef, options);
+      console.log('PDF generated successfully');
+      
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      
+      // Try alternative approach with minimal options
+      try {
+        console.log('Trying alternative PDF generation approach...');
+        await generatePDF(reportRef, {
+          filename: `medical_report_${medicalReport.patientName.replace(/\s+/g, "_")}_${medicalReport.reportDate}.pdf`
+        });
+        console.log('Alternative PDF generation successful');
+      } catch (fallbackError) {
+        console.error("Fallback PDF generation also failed:", fallbackError);
+        
+        // Final fallback: Use browser print
+        try {
+          console.log('Trying browser print as final fallback...');
+          const printWindow = window.open('', '_blank');
+          if (printWindow && reportRef.current) {
+            printWindow.document.write(`
+              <html>
+                <head>
+                  <title>Medical Report - ${medicalReport.patientName}</title>
+                  <style>
+                    body { 
+                      font-family: Arial, sans-serif; 
+                      margin: 20mm; 
+                      line-height: 1.6;
+                    }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .section { margin-bottom: 20px; }
+                    .section h3 { color: #059669; margin-bottom: 10px; }
+                    .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+                    @media print {
+                      body { margin: 0; }
+                    }
+                  </style>
+                </head>
+                <body>
+                  ${reportRef.current.innerHTML}
+                </body>
+              </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+            printWindow.close();
+            alert("PDF generation failed, but print dialog opened. You can save as PDF from there.");
+          } else {
+            alert("PDF generation failed. Please try again or use browser print (Ctrl+P).");
+          }
+        } catch (printError) {
+          console.error("Print fallback also failed:", printError);
+          alert("All PDF generation methods failed. Please use browser print (Ctrl+P) to save as PDF.");
+        }
+      }
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
@@ -256,17 +383,35 @@ const CreateDataPage = () => {
           <FileJson /> View JSON Data
         </button>
         <button
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
-          onClick={() => {
-            handlePrintPdf();
-          }}
+          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+          onClick={handlePrintPdf}
+          disabled={!medicalReport || isGeneratingPdf}
         >
-          <FileText /> Print PDF
+          {isGeneratingPdf ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              Generating PDF...
+            </>
+          ) : (
+            <>
+              <FileText /> Download PDF (A4)
+            </>
+          )}
         </button>
       </div>
 
       {medicalReport && (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div
+          ref={reportRef}
+          className="bg-white border border-gray-200 rounded-lg shadow-sm max-w-4xl mx-auto"
+          style={{
+            width: "210mm",
+            minHeight: "297mm",
+            padding: "20mm",
+            margin: "0 auto",
+            backgroundColor: "white",
+          }}
+        >
           {/* Hospital Header */}
           <div className="text-center py-8 border-b border-gray-200">
             <div className="flex justify-center mb-2">
@@ -293,7 +438,7 @@ const CreateDataPage = () => {
             <h1 className="text-3xl font-bold text-gray-800">MEDICAL REPORT</h1>
           </div>
 
-          <div className="p-8 space-y-6">
+          <div className="space-y-6 mt-6">
             {/* Visit Info */}
             <div>
               <h3 className="text-lg font-semibold text-green-600 mb-3">
@@ -397,7 +542,7 @@ const CreateDataPage = () => {
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-50 px-8 py-6 border-t border-gray-200">
+          <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 mt-8">
             <div className="text-center text-gray-600 text-sm">
               <p className="mb-2">
                 For inquiries and appointments, feel free to contact us.

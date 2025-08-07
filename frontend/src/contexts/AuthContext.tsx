@@ -175,17 +175,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         is_active: true,
         role,
       });
-
-      if (response.data) {
-        const userData = response.data;
-        setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
-        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes from now
-        const token = `token_${Date.now()}_${Math.random()
-          .toString(36)
-          .substr(2, 9)}`;
-        saveToken(token, expiresAt);
-        redirectToDashboard(userData.role);
+      if (response.status === 201) {
+        router.push("/auth/login");
+      } else {
+        throw new Error("Signup failed");
       }
     } catch (error) {
       console.error("Signup error:", error);

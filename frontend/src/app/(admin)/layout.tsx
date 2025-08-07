@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import RoleProtectedRoute from '@/components/RoleProtectedRoute';
 import TokenExpirationCountdown from '@/components/TokenExpirationCountdown';
+import Header from '@/components/header';
 
 export default function AdminLayout({
   children,
@@ -13,14 +14,15 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    logout();
-    router.push('/auth/login');
-  };
+  useEffect(() => {
+    if (!isAuthenticated) {
+      logout();
+    }
+  }, [isAuthenticated]);
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z' },
@@ -31,7 +33,7 @@ export default function AdminLayout({
   ];
 
   return (
-    <RoleProtectedRoute requiredRole="admin" fallbackPath="/dashboard">
+    <RoleProtectedRoute requiredRole="admin" fallbackPath="/admin/dashboard">
       <div className="min-h-screen bg-gray-100">
         {/* Sidebar for desktop */}
         <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
@@ -180,24 +182,7 @@ export default function AdminLayout({
           </div>
 
           {/* Top bar */}
-          <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow">
-            <div className="flex-1 px-4 flex justify-between">
-              <div className="flex-1 flex items-center">
-                <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
-              </div>
-              <div className="ml-4 flex items-center md:ml-6 space-x-4">
-                <TokenExpirationCountdown />
-                <div className="relative">
-                  <button
-                    onClick={handleLogout}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Header role="admin" />
 
           {/* Page content */}
           <main className="flex-1">

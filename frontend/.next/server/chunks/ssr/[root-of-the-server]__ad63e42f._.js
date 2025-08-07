@@ -57,9 +57,9 @@ function LoginPage() {
             if (isAdmin()) {
                 router.push("/admin/dashboard");
             } else if (isTenant()) {
-                router.push("/tenant/dashboard");
+                router.push("/tenant");
             } else if (isUser()) {
-                router.push("/user/dashboard");
+                router.push("/user");
             }
         } catch (err) {
             setError(err.response?.data?.detail || "Login failed. Please try again.");

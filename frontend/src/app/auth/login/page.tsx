@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -11,8 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, isAdmin, isTenant, isUser } = useAuth();
-  const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,13 +19,6 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      if (isAdmin()) {
-        router.push("/admin/dashboard");
-      } else if (isTenant()) {
-        router.push("/tenant/dashboard");
-      } else if (isUser()) {
-        router.push("/user/dashboard");
-      }
     } catch (err: any) {
       setError(err.response?.data?.detail || "Login failed. Please try again.");
     } finally {

@@ -1,33 +1,33 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignupPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'tenant' | 'user'>('user');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"admin" | "tenant" | "user">("user");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { signup } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError("Password must be at least 8 characters long");
       return;
     }
 
@@ -35,9 +35,10 @@ export default function SignupPage() {
 
     try {
       await signup(name, email, password, role);
-      router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Signup failed. Please try again.');
+      setError(
+        err.response?.data?.detail || "Signup failed. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +52,7 @@ export default function SignupPage() {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
+            Or{" "}
             <Link
               href="/auth/login"
               className="font-medium text-indigo-600 hover:text-indigo-500"
@@ -104,7 +105,9 @@ export default function SignupPage() {
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 value={role}
-                onChange={(e) => setRole(e.target.value as 'admin' | 'tenant' | 'user')}
+                onChange={(e) =>
+                  setRole(e.target.value as "admin" | "tenant" | "user")
+                }
               >
                 <option value="user">User</option>
                 <option value="tenant">Tenant</option>
@@ -157,11 +160,11 @@ export default function SignupPage() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isLoading ? "Creating account..." : "Create account"}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-} 
+}

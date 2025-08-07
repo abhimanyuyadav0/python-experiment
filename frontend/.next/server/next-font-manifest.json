@@ -1,6 +1,22 @@
 {
   "app": {
+    "[project]/src/app/(admin)/admin/analytics/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
     "[project]/src/app/(admin)/admin/dashboard/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
+    "[project]/src/app/(admin)/admin/logs/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
+    "[project]/src/app/(admin)/admin/settings/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
+    "[project]/src/app/(admin)/admin/users/page": [
       "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
       "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
     ],
@@ -8,7 +24,23 @@
       "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
       "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
     ],
+    "[project]/src/app/(tenant)/tenant/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
+    "[project]/src/app/(users)/user/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
+    "[project]/src/app/_not-found/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
     "[project]/src/app/auth/login/page": [
+      "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
+      "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
+    ],
+    "[project]/src/app/auth/signup/page": [
       "static/media/b0a57561b6cb5495-s.p.da1ebef7.woff2",
       "static/media/8ee3a1ba4ed5baee-s.p.be19f591.woff2"
     ],

@@ -124,9 +124,11 @@ __turbopack_context__.s({
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$api$2f$services$2f$userServices$2f$index$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/api/services/userServices/index.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature(), _s1 = __turbopack_context__.k.signature();
-'use client';
+"use client";
+;
 ;
 ;
 const AuthContext = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createContext"])(undefined);
@@ -134,7 +136,7 @@ const useAuth = ()=>{
     _s();
     const context = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useContext"])(AuthContext);
     if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
+        throw new Error("useAuth must be used within an AuthProvider");
     }
     return context;
 };
@@ -145,52 +147,54 @@ const AuthProvider = (param)=>{
     const [user, setUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [token, setToken] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [isLoading, setIsLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
     // Token management functions
     const saveToken = (token, expiresAt)=>{
         const tokenData = {
             token,
             expiresAt
         };
-        localStorage.setItem('tokenData', JSON.stringify(tokenData));
+        localStorage.setItem("tokenData", JSON.stringify(tokenData));
         setToken(token);
     };
     const getToken = ()=>{
-        const tokenDataStr = localStorage.getItem('tokenData');
+        const tokenDataStr = localStorage.getItem("tokenData");
         if (!tokenDataStr) return null;
         try {
             const tokenData = JSON.parse(tokenDataStr);
             if (Date.now() > tokenData.expiresAt) {
                 // Token expired
-                localStorage.removeItem('tokenData');
-                localStorage.removeItem('user');
+                localStorage.removeItem("tokenData");
+                localStorage.removeItem("user");
                 setToken(null);
                 setUser(null);
                 return null;
             }
             return tokenData.token;
         } catch (error) {
-            console.error('Error parsing token data:', error);
-            localStorage.removeItem('tokenData');
+            console.error("Error parsing token data:", error);
+            localStorage.removeItem("tokenData");
             return null;
         }
     };
     const clearToken = ()=>{
-        localStorage.removeItem('tokenData');
-        localStorage.removeItem('user');
+        localStorage.removeItem("tokenData");
+        localStorage.removeItem("user");
         setToken(null);
         setUser(null);
+        router.push("/auth/login");
     };
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AuthProvider.useEffect": ()=>{
             // Check if user is logged in on app start
             const currentToken = getToken();
-            const userData = localStorage.getItem('user');
+            const userData = localStorage.getItem("user");
             if (currentToken && userData) {
                 try {
                     setUser(JSON.parse(userData));
                     setToken(currentToken);
                 } catch (error) {
-                    console.error('Error parsing user data:', error);
+                    console.error("Error parsing user data:", error);
                     clearToken();
                 }
             }
@@ -204,7 +208,6 @@ const AuthProvider = (param)=>{
                 "AuthProvider.useEffect.interval": ()=>{
                     const currentToken = getToken();
                     if (!currentToken && user) {
-                        // Token expired, logout user
                         clearToken();
                     }
                 }
@@ -216,6 +219,15 @@ const AuthProvider = (param)=>{
     }["AuthProvider.useEffect"], [
         user
     ]);
+    const redirectToDashboard = (role)=>{
+        if (role === "admin") {
+            router.push("/admin/dashboard");
+        } else if (role === "tenant") {
+            router.push("/tenant");
+        } else if (role === "user") {
+            router.push("/user");
+        }
+    };
     const login = async (email, password)=>{
         try {
             setIsLoading(true);
@@ -226,20 +238,21 @@ const AuthProvider = (param)=>{
             if (response.data) {
                 const { user: userData, token, expires_at } = response.data;
                 setUser(userData);
-                localStorage.setItem('user', JSON.stringify(userData));
+                localStorage.setItem("user", JSON.stringify(userData));
                 // Save token with expiration (convert seconds to milliseconds)
                 const expiresAtMs = expires_at * 1000;
                 saveToken(token, expiresAtMs);
+                redirectToDashboard(userData.role);
             }
         } catch (error) {
-            console.error('Login error:', error);
+            console.error("Login error:", error);
             throw error;
         } finally{
             setIsLoading(false);
         }
     };
     const signup = async function(name, email, password) {
-        let role = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : 'user';
+        let role = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : "user";
         try {
             setIsLoading(true);
             const response = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$api$2f$services$2f$userServices$2f$index$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signupUser"])({
@@ -252,14 +265,14 @@ const AuthProvider = (param)=>{
             if (response.data) {
                 const userData = response.data;
                 setUser(userData);
-                localStorage.setItem('user', JSON.stringify(userData));
-                // Generate a dummy token for signup (in real app, this would come from the backend)
-                const dummyToken = "token_".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 9));
+                localStorage.setItem("user", JSON.stringify(userData));
                 const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes from now
-                saveToken(dummyToken, expiresAt);
+                const token = "token_".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 9));
+                saveToken(token, expiresAt);
+                redirectToDashboard(userData.role);
             }
         } catch (error) {
-            console.error('Signup error:', error);
+            console.error("Signup error:", error);
             throw error;
         } finally{
             setIsLoading(false);
@@ -276,9 +289,9 @@ const AuthProvider = (param)=>{
         login,
         signup,
         logout,
-        isAdmin: ()=>(user === null || user === void 0 ? void 0 : user.role) === 'admin',
-        isTenant: ()=>(user === null || user === void 0 ? void 0 : user.role) === 'tenant',
-        isUser: ()=>(user === null || user === void 0 ? void 0 : user.role) === 'user',
+        isAdmin: ()=>(user === null || user === void 0 ? void 0 : user.role) === "admin",
+        isTenant: ()=>(user === null || user === void 0 ? void 0 : user.role) === "tenant",
+        isUser: ()=>(user === null || user === void 0 ? void 0 : user.role) === "user",
         hasRole: (role)=>(user === null || user === void 0 ? void 0 : user.role) === role
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(AuthContext.Provider, {
@@ -286,11 +299,15 @@ const AuthProvider = (param)=>{
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/AuthContext.tsx",
-        lineNumber: 190,
-        columnNumber: 5
+        lineNumber: 216,
+        columnNumber: 10
     }, ("TURBOPACK compile-time value", void 0));
 };
-_s1(AuthProvider, "PiwoDeqPRCsfRwdePw8UHQ38Ar0=");
+_s1(AuthProvider, "VPCfXJZdo36DSLlj/i8TEIK8OVw=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"]
+    ];
+});
 _c = AuthProvider;
 var _c;
 __turbopack_context__.k.register(_c, "AuthProvider");

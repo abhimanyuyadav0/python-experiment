@@ -275,26 +275,21 @@ const CreateDataPage = () => {
         },
       };
 
-      console.log('Starting PDF generation with options:', options);
       await generatePDF(reportRef, options);
-      console.log('PDF generated successfully');
       
     } catch (error) {
       console.error("Error generating PDF:", error);
       
       // Try alternative approach with minimal options
       try {
-        console.log('Trying alternative PDF generation approach...');
         await generatePDF(reportRef, {
           filename: `medical_report_${medicalReport.patientName.replace(/\s+/g, "_")}_${medicalReport.reportDate}.pdf`
         });
-        console.log('Alternative PDF generation successful');
       } catch (fallbackError) {
         console.error("Fallback PDF generation also failed:", fallbackError);
         
         // Final fallback: Use browser print
         try {
-          console.log('Trying browser print as final fallback...');
           const printWindow = window.open('', '_blank');
           if (printWindow && reportRef.current) {
             const reportContent = reportRef.current.innerHTML;

@@ -39,12 +39,6 @@ const UploadFile = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log("UploadFile: File selected:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
-
     // Validate file type (allow common file types)
     const allowedTypes = [
       "application/pdf",

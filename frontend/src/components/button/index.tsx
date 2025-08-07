@@ -61,6 +61,7 @@ const Button = ({ children, ...props }: ButtonProps) => {
         disabled ? "opacity-50 cursor-not-allowed" : ""
       } ${loading ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
       onClick={onClick}
+      disabled={disabled || loading}
     >
       {children}
     </button>

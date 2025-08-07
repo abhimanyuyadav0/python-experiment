@@ -30,12 +30,6 @@ export const uploadFile = (file: File) => {
   const formData = new FormData();
   formData.append("file", file);
   
-  console.log("fileServices: Uploading file:", {
-    name: file.name,
-    type: file.type,
-    size: file.size
-  });
-  
   return axoisInstance.post<FileUploadResponse>("/api/v1/files/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
@@ -46,7 +40,6 @@ export const uploadFile = (file: File) => {
 // Get all files for the current user
 export const getUserFiles = (fileType?: string) => {
   const params = fileType ? { file_type: fileType } : {};
-  console.log("getUserFiles: Making request with params:", params);
   return axoisInstance.get<FileListResponse>("/api/v1/files/", { params });
 };
 
@@ -74,6 +67,5 @@ export const getFilesByType = (fileType: string) => {
 
 // Test authentication
 export const testFileAuth = () => {
-  console.log("fileServices: Testing file authentication");
   return axoisInstance.get("/api/v1/files/test-auth");
 };

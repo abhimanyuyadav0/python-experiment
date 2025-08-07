@@ -19,10 +19,12 @@ import {
   getUserFiles,
   deleteFile as deleteFileService,
   downloadFile as downloadFileService,
+  FileResponse,
 } from "@/lib/api/services/fileServices";
 import { toast } from "react-toastify";
 import { useQuery } from "@tanstack/react-query";
 import Button from "@/components/button";
+import UploadFile from "@/components/uploadFile";
 
 interface MedicalReport {
   patientId: string;
@@ -73,6 +75,7 @@ const CreateDataPage = () => {
   const [uploadStatus, setUploadStatus] = useState<string>("");
   const reportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<FileResponse | null>(null);
   const { token } = useAuth();
 
   // Format file size
@@ -730,6 +733,14 @@ const CreateDataPage = () => {
       />
 
       <div className="flex flex-wrap gap-4 mb-8">
+        <UploadFile
+          label="Upload File"
+          name="file"
+          type="file"
+          placeholder="Upload File"
+          value={file}
+          onChange={(file) => setFile(file)}
+        />
         <Button
           onClick={generateMedicalReport}
           disabled={isGenerating}

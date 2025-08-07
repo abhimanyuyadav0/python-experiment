@@ -9,6 +9,8 @@ python-backend/__pycache__/
 python-backend/*.py[cod]
 python-backend/*$py.class
 python-backend/venv/
+python-backend/venv.bak/
+python-backend/uploads/
 
 # C extensions
 python-backend/*.so

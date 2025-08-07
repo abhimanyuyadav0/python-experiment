@@ -6,11 +6,21 @@ from app.core.config import APP_NAME, APP_VERSION, PORT
 from sqlalchemy import text
 from app.api.v1 import api_router
 
+# Import models to ensure they are registered with SQLAlchemy
+from app.models.user import User
+from app.models.file import File
+
 # Create database tables
 print("🔧 Creating database tables...")
 Base.metadata.create_all(bind=engine)
 print("✅ Database connected: multitenant_app")
 print(f"PORT: {PORT}")
+
+# Verify tables exist
+with engine.connect() as conn:
+    result = conn.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
+    tables = [row[0] for row in result]
+    print(f"📋 Available tables: {tables}")
 
 app = FastAPI(
     title=APP_NAME or "Multi-Tenant API",
@@ -73,7 +83,8 @@ def test_token():
     
     # Calculate time until expiration
     now = datetime.utcnow()
-    expire_time = datetime.fromtimestamp(expires_at)
+    # expires_at is in milliseconds, convert to seconds for fromtimestamp
+    expire_time = datetime.fromtimestamp(expires_at / 1000)
     time_until_expiry = expire_time - now
     
     return {
@@ -82,8 +93,89 @@ def test_token():
         "expire_time": expire_time.isoformat(),
         "time_until_expiry_seconds": time_until_expiry.total_seconds(),
         "is_valid": payload is not None,
-        "payload": payload
+        "payload": payload,
+        "current_time": now.isoformat(),
+        "expire_time_utc": expire_time.isoformat()
     }
+
+@app.get("/test-users")
+def test_users():
+    """Test user database access"""
+    from app.services.user_service import get_user_by_email
+    from app.core.database import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        # Test getting a user
+        user = get_user_by_email(db, "user@example.com")
+        if user:
+            return {
+                "status": "success",
+                "user_found": True,
+                "user_email": user.email,
+                "user_id": user.id,
+                "user_role": user.role,
+                "is_active": user.is_active,
+                "password_hash": user.password[:20] + "..." if user.password else None
+            }
+        else:
+            return {
+                "status": "success",
+                "user_found": False,
+                "message": "User user@example.com not found"
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+    finally:
+        db.close()
+
+@app.get("/test-auth-flow")
+def test_auth_flow():
+    """Test complete authentication flow"""
+    from app.services.user_service import get_user_by_email, create_access_token, verify_token, verify_password, hash_password
+    from app.core.database import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        # Test getting a user
+        user = get_user_by_email(db, "user@example.com")
+        if not user:
+            return {
+                "status": "error",
+                "message": "Test user not found"
+            }
+        
+        # Test password verification
+        password_test = verify_password("user123", user.password)
+        
+        # Create a token
+        token, expires_at = create_access_token(data={"sub": user.email})
+        
+        # Verify the token
+        payload = verify_token(token)
+        
+        return {
+            "status": "success",
+            "user_email": user.email,
+            "user_id": user.id,
+            "is_active": user.is_active,
+            "password_verified": password_test,
+            "token_created": bool(token),
+            "token_length": len(token) if token else 0,
+            "expires_at": expires_at,
+            "token_verified": payload is not None,
+            "payload": payload
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     import uvicorn

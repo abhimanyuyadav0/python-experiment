@@ -58,35 +58,50 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
   // Token management functions
   const saveToken = (token: string, expiresAt: number) => {
     const tokenData: TokenData = { token, expiresAt };
-    localStorage.setItem("tokenData", JSON.stringify(tokenData));
+    const tokenDataString = JSON.stringify(tokenData);
+    localStorage.setItem("tokenData", tokenDataString);
     setToken(token);
+    console.log("AuthContext: Token saved", { token: token.substring(0, 20) + "...", expiresAt });
   };
 
   const getToken = (): string | null => {
     const tokenDataStr = localStorage.getItem("tokenData");
-    if (!tokenDataStr) return null;
+    if (!tokenDataStr) {
+      console.log("AuthContext: No token data found");
+      return null;
+    }
 
     try {
       const tokenData: TokenData = JSON.parse(tokenDataStr);
-      if (Date.now() > tokenData.expiresAt) {
-        // Token expired
+      const now = Date.now();
+      const isExpired = now >= tokenData.expiresAt;
+
+      console.log("AuthContext: Token check", {
+        now,
+        expiresAt: tokenData.expiresAt,
+        timeLeft: tokenData.expiresAt - now,
+        isExpired
+      });
+
+      if (isExpired) {
+        console.log("AuthContext: Token expired");
         localStorage.removeItem("tokenData");
         localStorage.removeItem("user");
-        setToken(null);
-        setUser(null);
         return null;
       }
+      console.log("AuthContext: Token retrieved successfully");
       return tokenData.token;
     } catch (error) {
-      console.error("Error parsing token data:", error);
+      console.error("AuthContext: Error parsing token data:", error);
       localStorage.removeItem("tokenData");
       return null;
     }
@@ -102,17 +117,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in on app start
+    console.log("AuthContext: Initializing on app start");
     const currentToken = getToken();
     const userData = localStorage.getItem("user");
-
     if (currentToken && userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
         setToken(currentToken);
+        console.log("AuthContext: User restored from localStorage");
       } catch (error) {
-        console.error("Error parsing user data:", error);
+        console.error("AuthContext: Error parsing user data:", error);
         clearToken();
       }
+    } else {
+      console.log("AuthContext: No valid token or user data found");
     }
     setIsLoading(false);
   }, []);
@@ -122,12 +141,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const interval = setInterval(() => {
       const currentToken = getToken();
       if (!currentToken && user) {
+        // Token expired but user state still exists, clear everything
         clearToken();
       }
     }, 60000); // Check every minute
 
     return () => clearInterval(interval);
   }, [user]);
+
   const redirectToDashboard = (role: "admin" | "tenant" | "user") => {
     if (role === "admin") {
       router.push("/admin/dashboard");
@@ -144,16 +165,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.data) {
         const { user: userData, token, expires_at } = response.data;
+        console.log("AuthContext: Login successful", {
+          userData,
+          token: token ? token.substring(0, 20) + "..." : "null",
+          expires_at,
+        });
+
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
 
-        // Save token with expiration (convert seconds to milliseconds)
-        const expiresAtMs = expires_at * 1000;
-        saveToken(token, expiresAtMs);
+        // Save token with expiration (expires_at is already in milliseconds)
+        saveToken(token, expires_at);
         redirectToDashboard(userData.role);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("AuthContext: Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -175,17 +201,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         is_active: true,
         role,
       });
-
-      if (response.data) {
-        const userData = response.data;
-        setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
-        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes from now
-        const token = `token_${Date.now()}_${Math.random()
-          .toString(36)
-          .substr(2, 9)}`;
-        saveToken(token, expiresAt);
-        redirectToDashboard(userData.role);
+      if (response.status === 201) {
+        router.push("/auth/login");
+      } else {
+        throw new Error("Signup failed");
       }
     } catch (error) {
       console.error("Signup error:", error);

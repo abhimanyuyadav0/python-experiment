@@ -10,16 +10,9 @@ export default function UserLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, logout } = useAuth();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      logout();
-    }
-  }, [isAuthenticated]);
 
   return (
-    <RoleProtectedRoute requiredRole={['admin', 'tenant', 'user']} fallbackPath="/user">
+    <RoleProtectedRoute requiredRole={['admin', 'tenant', 'user']} fallbackPath="/auth/login">
       <div className="min-h-screen bg-gray-100">
         {/* Navigation */}
         <Header role="user" />

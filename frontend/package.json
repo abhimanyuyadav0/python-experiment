@@ -11,9 +11,13 @@
   "dependencies": {
     "@tanstack/react-query": "^5.84.1",
     "axios": "^1.11.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
+    "lucide-react": "^0.537.0",
     "next": "15.4.5",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-to-pdf": "^2.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

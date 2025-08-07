@@ -14,8 +14,10 @@ router = APIRouter()
 @router.post("/authenticate", response_model=TokenData)
 def authenticate_user_endpoint(user_credentials: UserLogin, db: Session = Depends(get_db)):
     """Authenticate user and return token"""
+    print(f"🔐 authenticate_user_endpoint: Login attempt for email: {user_credentials.email}")
     user = authenticate_user(db, user_credentials.email, user_credentials.password)
     if not user:
+        print(f"🔐 authenticate_user_endpoint: Authentication failed for email: {user_credentials.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
@@ -23,7 +25,7 @@ def authenticate_user_endpoint(user_credentials: UserLogin, db: Session = Depend
     
     # Create access token
     token, expires_at = create_access_token(data={"sub": user.email})
-    
+    print(f"🔐 authenticate_user_endpoint: Token created for user {user.email}, expires_at: {expires_at}")
     return TokenData(
         user=user,
         token=token,

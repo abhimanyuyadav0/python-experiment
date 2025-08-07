@@ -2,11 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface TokenData {
-  token: string;
-  expiresAt: number; // Should be in milliseconds
-}
+import { jwtDecode } from "jwt-decode";
+import { validateAndCleanToken } from "@/utils/tokenUtils";
 
 export default function TokenExpirationCountdown() {
   const [timeLeft, setTimeLeft] = useState<string>("");
@@ -19,22 +16,29 @@ export default function TokenExpirationCountdown() {
     }
 
     const updateCountdown = () => {
-      const tokenDataStr = localStorage.getItem("tokenData");
-      if (!tokenDataStr) {
+      const token = localStorage.getItem("token");
+      if (!token) {
         setTimeLeft("");
         return;
       }
 
       try {
-        const tokenData: TokenData = JSON.parse(tokenDataStr);
+        const { decoded } = validateAndCleanToken(token);
+        if (!decoded || !decoded.exp) {
+          setTimeLeft("");
+          return;
+        }
+
         const now = Date.now();
-        const timeRemaining = now - tokenData.expiresAt; // expiresAt is already in ms
+        const expTime = decoded.exp * 1000; // ✅ Convert seconds to milliseconds
+        const timeRemaining = expTime - now;
+
         if (timeRemaining <= 0) {
           setTimeLeft("Expired");
           return;
         }
 
-        const minutes = Math.floor(timeRemaining / 6000); // 60000 ms in a minute
+        const minutes = Math.floor(timeRemaining / 60000);
         const seconds = Math.floor((timeRemaining % 60000) / 1000);
         setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
       } catch (error) {

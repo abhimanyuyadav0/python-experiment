@@ -580,19 +580,10 @@ const CreateDataPage = () => {
               printWindow.close();
             }, 500);
 
-            alert(
-              "Print dialog opened with properly formatted medical report. Select 'Save as PDF' to download."
-            );
           } else {
-            alert(
-              "PDF generation failed. Please try again or use browser print (Ctrl+P)."
-            );
           }
         } catch (printError) {
           console.error("Print fallback also failed:", printError);
-          alert(
-            "All PDF generation methods failed. Please use browser print (Ctrl+P) to save as PDF."
-          );
         }
       }
     } finally {
@@ -632,13 +623,11 @@ const CreateDataPage = () => {
     ];
     
     if (!allowedTypes.includes(file.type)) {
-      alert("Please select a supported file type (PDF, DOC, DOCX, TXT, Images, Videos, Audio, or Archives).");
       return;
     }
 
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB.");
       return;
     }
 
@@ -654,16 +643,12 @@ const CreateDataPage = () => {
       // Add to uploaded files list
       setUploadedFiles((prev) => [...prev, response.data.file]);
 
-      // Show success message
-      alert(`${file.name} uploaded successfully!\nFile URL: ${response.data.file.url}`);
-
       // Show uploaded files modal
       setShowUploadModal(true);
     } catch (error: any) {
       console.error("CreateDataPage: Upload error:", error);
       const errorMessage = error.response?.data?.detail || "Upload failed";
       setUploadStatus(`Upload failed: ${errorMessage}`);
-      alert(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -684,7 +669,6 @@ const CreateDataPage = () => {
     } catch (error: any) {
       console.error("CreateDataPage: Error fetching files:", error);
       const errorMessage = error.response?.data?.detail || "Failed to fetch uploaded files";
-      alert(errorMessage);
     } finally {
       setIsLoadingFiles(false);
     }
@@ -706,8 +690,6 @@ const CreateDataPage = () => {
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
       console.error("Error downloading file:", error);
-      const errorMessage = error.response?.data?.detail || "Failed to download file";
-      alert(errorMessage);
     }
   };
 
@@ -721,11 +703,8 @@ const CreateDataPage = () => {
       setUploadedFiles((prev) =>
         prev.filter((file) => file.id !== fileId)
       );
-      alert("File deleted successfully!");
     } catch (error: any) {
       console.error("Error deleting file:", error);
-      const errorMessage = error.response?.data?.detail || "Failed to delete file";
-      alert(errorMessage);
     }
   };
 
@@ -734,11 +713,8 @@ const CreateDataPage = () => {
       console.log("CreateDataPage: Testing file authentication");
       const response = await testFileAuth();
       console.log("CreateDataPage: Auth test successful:", response.data);
-      alert("Authentication test successful!");
     } catch (error: any) {
       console.error("CreateDataPage: Auth test failed:", error);
-      const errorMessage = error.response?.data?.detail || "Authentication test failed";
-      alert(errorMessage);
     }
   };
 

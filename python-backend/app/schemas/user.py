@@ -37,4 +37,3 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     user: UserResponse
     token: str
-    expires_at: int

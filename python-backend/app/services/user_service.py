@@ -18,39 +18,41 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash"""
     return hash_password(plain_password) == hashed_password
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> tuple[str, int]:
     """Create JWT access token"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire_minutes = ACCESS_TOKEN_EXPIRE_MINUTES or 5  # fallback to 5 minutes
-        expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    current_time = datetime.utcnow()
-    
-    to_encode.update({
-        "exp": expire,
-        "iat": current_time,
-        "type": "access"
-    })
-    
+    to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    
+    # Return token and expiration timestamp in milliseconds
     expire_timestamp_ms = int(expire.timestamp() * 1000)
-    print(f"🔐 create_access_token: Token created with expiration: {expire_timestamp_ms}")
     return encoded_jwt, expire_timestamp_ms
 
-def verify_token(token: str) -> Optional[dict]:
-    """Verify JWT token and return payload if valid"""
+
+def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
+    """Verify and decode JWT token"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(f"🔐 verify_token: Token verified successfully, payload: {payload}")
+        
+        # Check token type
+        if payload.get("type") != token_type:
+            return None
+            
+        # Check expiration
+        exp = payload.get("exp")
+        if exp is None:
+            return None
+            
+        if datetime.utcnow() > datetime.fromtimestamp(exp):
+            return None
+            
         return payload
-    except jwt.ExpiredSignatureError:
-        print("🔐 verify_token: Token expired")
-        return None
-    except jwt.JWTError as e:
-        print(f"🔐 verify_token: JWT error: {e}")
+    except JWTError:
         return None
 
 def create_user(db: Session, user: UserCreate) -> User:
@@ -152,21 +154,21 @@ def get_current_user(authorization: str = Header(None), db: Session = Depends(ge
         
         print(f"🔐 get_current_user: Token payload: {payload}")
         
-        # Get user email from token
-        email: str = payload.get("sub")
-        if email is None:
+        # Get user ID from token
+        user_id: int = payload.get("sub")
+        if user_id is None:
             print("🔐 get_current_user: No 'sub' field in token payload")
             raise credentials_exception
         
-        print(f"🔐 get_current_user: User email from token: {email}")
+        print(f"🔐 get_current_user: User ID from token: {user_id}")
         
         # Get user from database
-        user = get_user_by_email(db, email=email)
+        user = get_user_by_id(db, user_id=user_id)
         if user is None:
             print("🔐 get_current_user: User not found in database")
             raise credentials_exception
         
-        print(f"🔐 get_current_user: User found: {user.email}")
+        print(f"🔐 get_current_user: User found: {user.email} (ID: {user.id})")
         return user
     except Exception as e:
         print(f"🔐 get_current_user: Exception: {e}")

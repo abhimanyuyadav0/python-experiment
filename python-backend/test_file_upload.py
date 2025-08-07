@@ -9,18 +9,18 @@ import os
 from pathlib import Path
 
 # API base URL
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:5001"
 
 def login_user(email: str, password: str):
     """Login and get access token"""
     login_data = {
-        "username": email,
+        "email": email,
         "password": password
     }
     
-    response = requests.post(f"{BASE_URL}/api/v1/users/login", data=login_data)
+    response = requests.post(f"{BASE_URL}/api/v1/users/authenticate", json=login_data)
     if response.status_code == 200:
-        return response.json()["access_token"]
+        return response.json()["token"]
     else:
         print(f"Login failed: {response.text}")
         return None

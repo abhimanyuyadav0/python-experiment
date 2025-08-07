@@ -24,12 +24,16 @@ def authenticate_user_endpoint(user_credentials: UserLogin, db: Session = Depend
         )
     
     # Create access token
-    token, expires_at = create_access_token(data={"sub": user.email})
-    print(f"🔐 authenticate_user_endpoint: Token created for user {user.email}, expires_at: {expires_at}")
+    token_data = {
+        "sub": user.id,  # String UUID directly
+        "email": user.email,
+        "name": user.name
+    }
+    token, expires_at = create_access_token(data=token_data)
+    print(f"🔐 authenticate_user_endpoint: Token created for user {user.email}, token: {token}")
     return TokenData(
         user=user,
         token=token,
-        expires_at=expires_at
     )
 
 @router.get("/role/{role}", response_model=List[UserResponse])

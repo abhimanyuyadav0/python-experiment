@@ -152,7 +152,7 @@ def test_auth_flow():
         password_test = verify_password("user123", user.password)
         
         # Create a token
-        token, expires_at = create_access_token(data={"sub": user.email})
+        token, expires_at = create_access_token(data={"sub": user.id})
         
         # Verify the token
         payload = verify_token(token)

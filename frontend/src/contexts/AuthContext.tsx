@@ -7,8 +7,15 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { loginUser, signupUser } from "@/lib/api/services/userServices";
 import { useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
+import { loginUser, signupUser } from "@/lib/api/services/userServices";
+import { validateAndCleanToken } from "@/utils/tokenUtils";
+
+interface JWTPayload {
+  exp?: number;
+  [key: string]: any;
+}
 
 interface User {
   id: number;
@@ -18,11 +25,6 @@ interface User {
   role: "admin" | "tenant" | "user";
   created_at: string;
   updated_at: string;
-}
-
-interface TokenData {
-  token: string;
-  expiresAt: number;
 }
 
 interface AuthContextType {
@@ -48,7 +50,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
@@ -64,122 +66,93 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Token management functions
-  const saveToken = (token: string, expiresAt: number) => {
-    const tokenData: TokenData = { token, expiresAt };
-    const tokenDataString = JSON.stringify(tokenData);
-    localStorage.setItem("tokenData", tokenDataString);
+  const saveToStorage = (token: string, userData: User) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(userData));
     setToken(token);
-    console.log("AuthContext: Token saved", { token: token.substring(0, 20) + "...", expiresAt });
+    setUser(userData);
   };
 
-  const getToken = (): string | null => {
-    const tokenDataStr = localStorage.getItem("tokenData");
-    if (!tokenDataStr) {
-      console.log("AuthContext: No token data found");
-      return null;
-    }
-
-    try {
-      const tokenData: TokenData = JSON.parse(tokenDataStr);
-      const now = Date.now();
-      const isExpired = now >= tokenData.expiresAt;
-
-      console.log("AuthContext: Token check", {
-        now,
-        expiresAt: tokenData.expiresAt,
-        timeLeft: tokenData.expiresAt - now,
-        isExpired
-      });
-
-      if (isExpired) {
-        console.log("AuthContext: Token expired");
-        localStorage.removeItem("tokenData");
-        localStorage.removeItem("user");
-        return null;
-      }
-      console.log("AuthContext: Token retrieved successfully");
-      return tokenData.token;
-    } catch (error) {
-      console.error("AuthContext: Error parsing token data:", error);
-      localStorage.removeItem("tokenData");
-      return null;
-    }
-  };
-
-  const clearToken = () => {
-    localStorage.removeItem("tokenData");
+  const clearStorage = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
     setToken(null);
     setUser(null);
-    router.push("/auth/login");
+  };
+
+  const getTokenFromStorage = (): string | null => {
+    return localStorage.getItem("token");
+  };
+
+  const getUserFromStorage = (): User | null => {
+    const userStr = localStorage.getItem("user");
+    try {
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+      console.error("AuthContext: Error parsing user from storage", error);
+      return null;
+    }
   };
 
   useEffect(() => {
-    // Check if user is logged in on app start
-    console.log("AuthContext: Initializing on app start");
-    const currentToken = getToken();
-    const userData = localStorage.getItem("user");
-    if (currentToken && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        setToken(currentToken);
-        console.log("AuthContext: User restored from localStorage");
-      } catch (error) {
-        console.error("AuthContext: Error parsing user data:", error);
-        clearToken();
+    const initAuth = () => {
+      const storedToken = getTokenFromStorage();
+      const { valid } = validateAndCleanToken(storedToken);
+      const storedUser = getUserFromStorage();
+
+      if (valid && storedUser) {
+        setToken(storedToken);
+        setUser(storedUser);
+      } else {
+        clearStorage();
       }
-    } else {
-      console.log("AuthContext: No valid token or user data found");
-    }
-    setIsLoading(false);
+
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-  // Check token expiration every minute
   useEffect(() => {
     const interval = setInterval(() => {
-      const currentToken = getToken();
-      if (!currentToken && user) {
-        // Token expired but user state still exists, clear everything
-        clearToken();
+      if (!token) return;
+
+      try {
+        const decoded: JWTPayload = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp && decoded.exp < currentTime) {
+          console.warn("Token expired → Logging out");
+          logout();
+        }
+      } catch (error) {
+        console.error("Invalid token → Logging out", error);
+        logout();
       }
-    }, 60000); // Check every minute
+    }, 60_000); // every minute
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [token]);
 
-  const redirectToDashboard = (role: "admin" | "tenant" | "user") => {
-    if (role === "admin") {
-      router.push("/admin/dashboard");
-    } else if (role === "tenant") {
-      router.push("/tenant");
-    } else if (role === "user") {
-      router.push("/user");
-    }
+  const redirectToDashboard = (role: User["role"]) => {
+    const routes = {
+      admin: "/admin/dashboard",
+      tenant: "/tenant",
+      user: "/user",
+    };
+    router.push(routes[role]);
   };
+
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const response = await loginUser({ email, password });
+      const { user: userData, token } = response.data;
 
-      if (response.data) {
-        const { user: userData, token, expires_at } = response.data;
-        console.log("AuthContext: Login successful", {
-          userData,
-          token: token ? token.substring(0, 20) + "..." : "null",
-          expires_at,
-        });
+      saveToStorage(token, userData);
 
-        setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
-
-        // Save token with expiration (expires_at is already in milliseconds)
-        saveToken(token, expires_at);
-        redirectToDashboard(userData.role);
-      }
+      redirectToDashboard(userData.role);
     } catch (error) {
-      console.error("AuthContext: Login error:", error);
+      console.error("Login failed:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -192,22 +165,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     password: string,
     role: "admin" | "tenant" | "user" = "user"
   ) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const response = await signupUser({
         name,
         email,
         password,
-        is_active: true,
         role,
+        is_active: true,
       });
+
       if (response.status === 201) {
         router.push("/auth/login");
       } else {
         throw new Error("Signup failed");
       }
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Signup failed:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -215,7 +189,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const logout = () => {
-    clearToken();
+    clearStorage();
+    router.push("/auth/login");
   };
 
   const value: AuthContextType = {
@@ -232,5 +207,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     hasRole: (role) => user?.role === role,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
 };

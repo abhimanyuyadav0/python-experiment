@@ -11,7 +11,6 @@ interface TokenData {
 export default function TokenExpirationCountdown() {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const { token } = useAuth();
-
   useEffect(() => {
     if (!token) {
       setTimeLeft('');
@@ -28,24 +27,15 @@ export default function TokenExpirationCountdown() {
       try {
         const tokenData: TokenData = JSON.parse(tokenDataStr);
         const now = Date.now();
-        const timeRemaining = tokenData.expiresAt - now;
-
-        // Debug logging
-        // console.log('Token Debug:', {
-        //   expiresAt: tokenData.expiresAt,
-        //   now: now,
-        //   timeRemaining: timeRemaining,
-        //   expiresAtDate: new Date(tokenData.expiresAt),
-        //   nowDate: new Date(now)
-        // });
+        const timeRemaining = tokenData.expiresAt * 1000 - now;
 
         if (timeRemaining <= 0) {
           setTimeLeft('Expired');
           return;
         }
 
-        const minutes = Math.floor(timeRemaining / 60000);
-        const seconds = Math.floor((timeRemaining % 60000) / 1000);
+        const minutes = Math.floor(timeRemaining / 1000 / 60);
+        const seconds = Math.floor(timeRemaining / 1000 % 60);
         setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
       } catch (error) {
         console.error('Error parsing token data:', error);

@@ -109,6 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         setUser(JSON.parse(userData));
         setToken(currentToken);
+        redirectToDashboard(JSON.parse(userData).role);
       } catch (error) {
         console.error("Error parsing user data:", error);
         clearToken();
@@ -128,6 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => clearInterval(interval);
   }, [user]);
+
   const redirectToDashboard = (role: "admin" | "tenant" | "user") => {
     if (role === "admin") {
       router.push("/admin/dashboard");
@@ -147,9 +149,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
 
-        // Save token with expiration (convert seconds to milliseconds)
-        const expiresAtMs = expires_at * 1000;
-        saveToken(token, expiresAtMs);
+        // Save token with expiration (expires_at is already in milliseconds)
+        saveToken(token, expires_at);
         redirectToDashboard(userData.role);
       }
     } catch (error) {

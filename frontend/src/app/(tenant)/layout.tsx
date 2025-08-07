@@ -21,7 +21,7 @@ export default function TenantLayout({
   }, [isAuthenticated]);
 
   return (
-    <RoleProtectedRoute requiredRole={['admin', 'tenant']} fallbackPath="/tenant">
+    <RoleProtectedRoute requiredRole={['admin', 'tenant']} fallbackPath="/auth/login">
       <div className="min-h-screen bg-gray-100">
         {/* Navigation */}
         <Header role="tenant" />

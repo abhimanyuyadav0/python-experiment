@@ -4,7 +4,7 @@ import { refreshToken as refreshTokenApi } from "./services/userServices";
 const axoisInstance = axois.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   headers: {
-    "centent-Type": "application/json",
+    "Content-Type": "application/json",
   },
 });
 

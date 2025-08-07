@@ -15,7 +15,6 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -33,7 +32,7 @@ export default function AdminLayout({
   ];
 
   return (
-    <RoleProtectedRoute requiredRole="admin" fallbackPath="/admin/dashboard">
+    <RoleProtectedRoute requiredRole="admin" fallbackPath="/auth/login">
       <div className="min-h-screen bg-gray-100">
         {/* Sidebar for desktop */}
         <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">

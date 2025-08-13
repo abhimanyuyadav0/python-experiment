@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base, SessionLocal
+from app.core.mongodb import connect_to_mongo, close_mongo_connection
 from app.core.config import APP_NAME, APP_VERSION, PORT
 from sqlalchemy import text
 from app.api.v1 import api_router
@@ -30,9 +31,23 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event():
+    # Connect to MongoDB (optional - app can run without it)
+    try:
+        await connect_to_mongo()
+        print("✅ MongoDB connected successfully")
+    except Exception as e:
+        print(f"⚠️  MongoDB connection failed: {str(e)}")
+        print("⚠️  Order API endpoints will not be available")
+        print("⚠️  Other API endpoints will continue to work")
+    
     print(f"🚀 Server running on port {PORT}")
     print(f"📚 API Documentation: http://localhost:{PORT}/docs")
     print(f"🔍 Health Check: http://localhost:{PORT}/health")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    # Close MongoDB connection
+    await close_mongo_connection()
 
 # Add CORS middleware
 app.add_middleware(
@@ -57,6 +72,26 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/health/mongodb")
+async def mongodb_health_check():
+    """Test MongoDB connection"""
+    try:
+        from app.core.mongodb import get_mongodb, mongodb
+        
+        # Check if MongoDB is connected
+        if not mongodb.client or not mongodb.db:
+            return {
+                "status": "MongoDB not connected", 
+                "error": "MongoDB connection was not established during startup"
+            }
+        
+        db = get_mongodb()
+        # Test connection by running a simple command
+        await db.command("ping")
+        return {"status": "MongoDB connection successful"}
+    except Exception as e:
+        return {"status": "MongoDB connection failed", "error": str(e)}
 
 @app.get("/test-db")
 def test_database():

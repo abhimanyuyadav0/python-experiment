@@ -105,3 +105,4 @@ def delete_user_endpoint(user_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    return {"message": "User deleted successfully"}

@@ -4,6 +4,7 @@ from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 import jwt
+from jwt import PyJWTError
 import hashlib
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -52,7 +53,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
             return None
             
         return payload
-    except JWTError:
+    except PyJWTError:
         return None
 
 def create_user(db: Session, user: UserCreate) -> User:

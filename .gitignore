@@ -157,3 +157,15 @@ Thumbs.db
 
 # Supabase
 .supabase/ 
+
+# Mongo Backend
+mongo-backend/node_modules/
+mongo-backend/dist/
+mongo-backend/.env
+mongo-backend/.next/
+mongo-backend/build/
+mongo-backend/develop-eggs/
+mongo-backend/dist/
+mongo-backend/downloads/
+mongo-backend/eggs/
+mongo-backend/.eggs/

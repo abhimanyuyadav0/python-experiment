@@ -77,7 +77,6 @@ const UploadFile = ({
         const result = await onUpload(file);
         setUploadResult(result);
         setUploadProgress("Upload successful!");
-        toast.success("File uploaded successfully!");
 
         // Call the success callback with file details
         if (onUploadSuccess && result) {

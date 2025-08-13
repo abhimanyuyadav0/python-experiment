@@ -76,6 +76,7 @@ const CreateDataPage = () => {
     try {
       const response = await uploadFile(file);
       setUploadStatus("Upload successful!");
+      toast.success("File uploaded successfully!");
       refetchFiles();
       return response.data; // Return the upload response data
     } catch (error: any) {
@@ -115,7 +116,6 @@ const CreateDataPage = () => {
           onUpload={(file) => handleUpload(file)}
           onUploadSuccess={(fileDetails) => {
             setUploadedFileDetails(fileDetails);
-            toast.success("File uploaded successfully!");
           }}
           isUploading={isUploading}
         />

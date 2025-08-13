@@ -27,6 +27,7 @@ export interface FileListResponse {
 
 // Upload a file
 export const uploadFile = (file: File) => {
+  console.log("uploadFile", file);
   const formData = new FormData();
   formData.append("file", file);
   

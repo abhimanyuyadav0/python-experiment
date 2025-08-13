@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.routes import user
 from app.core.database import engine, Base, SessionLocal
 from app.core.config import APP_NAME, APP_VERSION, PORT
 from sqlalchemy import text

@@ -6,8 +6,13 @@ from app.schemas.order import OrderCreateSchema, OrderUpdateSchema, OrderRespons
 
 class OrderService:
     def __init__(self):
-        self.db = get_mongodb()
-        self.collection = self.db.orders
+        try:
+            self.db = get_mongodb()
+            self.collection = self.db.orders
+            print("✅ OrderService: MongoDB connection successful")
+        except Exception as e:
+            print(f"❌ OrderService: MongoDB connection failed: {str(e)}")
+            raise RuntimeError(f"MongoDB connection failed: {str(e)}")
 
     async def create_order(self, order_data: OrderCreateSchema) -> OrderResponseSchema:
         """Create a new order"""

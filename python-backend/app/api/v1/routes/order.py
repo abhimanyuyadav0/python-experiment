@@ -25,11 +25,20 @@ async def create_order(order_data: OrderCreateSchema):
     - **notes**: Additional notes (optional)
     """
     print("🔄 create_order function called")
+    print(f"🔄 Order data received: {order_data}")
+    
     try:
         order_service = OrderService()
         order = await order_service.create_order(order_data)
+        print(f"✅ Order created successfully: {order.id}")
         return order
+    except RuntimeError as e:
+        print(f"❌ OrderService initialization failed: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
     except Exception as e:
+        print(f"❌ Order creation failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to create order: {str(e)}")
 
 @router.get("/{order_id}", response_model=OrderResponseSchema, summary="Get order by ID")

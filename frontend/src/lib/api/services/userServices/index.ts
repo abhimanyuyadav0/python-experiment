@@ -25,6 +25,10 @@ export const signupUser = (data: { name: string; email: string; password: string
   return axoisInstance.post("/api/v1/users/", data);
 };
 
-export const getAllUsers = () => axoisInstance.get("/api/v1/users/");
+export const getAllUsers = async () => {
+  const response = await axoisInstance.get("/api/v1/users/");
+  console.log("users response", response.data);
+  return response.data;
+};
 export const deleteUser = (id: string) =>
   axoisInstance.delete(`/api/v1/users/${id}`);

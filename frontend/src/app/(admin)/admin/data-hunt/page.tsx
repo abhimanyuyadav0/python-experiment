@@ -29,8 +29,13 @@ import {
 } from "@/lib/api/services/customerServices";
 import { toast } from "react-toastify";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getAllUsers } from "@/lib/api/services/userServices";
-
+import { getAllUsers, signupUser } from "@/lib/api/services/userServices";
+interface UserCreateData {
+  name: string;
+  email: string;
+  password: string;
+  role: "admin" | "tenant" | "user";
+}
 const DataHuntPage = () => {
   console.log("🎬 DataHuntPage component rendering");
 
@@ -95,10 +100,6 @@ const DataHuntPage = () => {
     return randomDate.toISOString().split("T")[0];
   };
   // Data states
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Form states
@@ -108,14 +109,7 @@ const DataHuntPage = () => {
     customer_email: "",
     customer_phone: "",
     items: [],
-    shipping_address: {
-      street: "",
-      city: "",
-      state: "",
-      zip_code: "",
-      country: "",
-    },
-    payment_method: "credit_card",
+    shipping_address: "", // Changed from object to string to match backend
     notes: "",
   });
 
@@ -201,11 +195,7 @@ const DataHuntPage = () => {
     queryKey: ["users"],
     queryFn: () => getAllUsers(),
   });
-  console.log("customersRes", customersRes);
-  console.log("ordersRes", ordersRes);
-  console.log("productsRes", productsRes);
-  console.log("paymentsRes", paymentsRes);
-  console.log("usersRes", usersRes);
+
   // Modal handlers
   const handleOrdersModal = () => setIsOrdersOpen(!isOrdersOpen);
   const handlePaymentsModal = () => setIsPaymentsOpen(!isPaymentsOpen);
@@ -259,14 +249,7 @@ const DataHuntPage = () => {
         customer_email: "",
         customer_phone: "",
         items: [],
-        shipping_address: {
-          street: "",
-          city: "",
-          state: "",
-          zip_code: "",
-          country: "",
-        },
-        payment_method: "credit_card",
+        shipping_address: "", // Changed from object to string to match backend
         notes: "",
       });
     } catch (error) {
@@ -365,6 +348,44 @@ const DataHuntPage = () => {
       setLoading(false);
     }
   };
+  const { mutate: createUserMutation } = useMutation({
+    mutationFn: (user: UserCreateData) => signupUser({
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      is_active: true,
+      role: user.role,
+    }),
+    onSuccess: () => {
+      refetchUsers();
+      toast.success("User created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create user");
+    },
+  });
+  const [userForm, setUserForm] = useState<UserCreateData>({
+    name: "",
+    email: "",
+    password: "123456 ",
+    role: "user",
+  });
+  const handleCreateUserModal = () => setIsCreateUserOpen(!isCreateUserOpen);
+  const handleUserFormChange = (field: keyof UserCreateData, value: any) => {
+    setUserForm((prev) => ({ ...prev, [field]: value }));
+  };
+  const handleCreateUser = async () => {
+    try {
+      setLoading(true);
+      createUserMutation(userForm);
+      handleCreateUserModal();
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast.error("Failed to create user");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addOrderItem = () => {
     const newItem: OrderItem = {
@@ -372,7 +393,7 @@ const DataHuntPage = () => {
       product_name: "",
       quantity: 1,
       unit_price: 0,
-      subtotal: 0,
+      total_price: 0,
     };
     setOrderForm((prev) => ({
       ...prev,
@@ -416,24 +437,17 @@ const DataHuntPage = () => {
           product_name: "Laptop Computer",
           quantity: 1,
           unit_price: 1299.99,
-          subtotal: 1299.99,
+          total_price: 1299.99,
         },
         {
           product_id: "PROD_002",
           product_name: "Wireless Mouse",
           quantity: 2,
           unit_price: 29.99,
-          subtotal: 59.98,
+          total_price: 59.98,
         },
       ],
-      shipping_address: {
-        street: "123 Main Street",
-        city: "New York",
-        state: "NY",
-        zip_code: "10001",
-        country: "USA",
-      },
-      payment_method: "credit_card",
+      shipping_address: "123 Main Street, New York, NY 10001, USA",
       notes: "Please deliver during business hours",
     };
     setOrderForm(dummyOrder);
@@ -525,7 +539,15 @@ const DataHuntPage = () => {
     };
     setPaymentForm(dummyPayment);
   };
-
+  const generateUserData = () => {
+    const dummyUser: UserCreateData = {
+      name: generateRandomName(),
+      email: `user${Math.random().toString(36).substr(2, 6)}@example.com`,
+      password: "123456",
+      role: "user",
+    };
+    setUserForm(dummyUser);
+  };
   const generateCustomerData = () => {
     const dummyCustomer: CustomerCreateData = {
       first_name: generateRandomName().split(" ")[0],
@@ -596,7 +618,7 @@ const DataHuntPage = () => {
               Create Order
             </Button>
             <Button onClick={handleOrdersModal} variant="secondary" size="md">
-              View Orders ({orders.length})
+              View Orders ({ordersRes?.orders?.length})
             </Button>
             <Button
               onClick={() => refetchOrders()}
@@ -620,7 +642,7 @@ const DataHuntPage = () => {
               Create Payment
             </Button>
             <Button onClick={handlePaymentsModal} variant="secondary" size="md">
-              View Payments ({payments.length})
+              View Payments ({paymentsRes?.payments?.length})
             </Button>
             <Button
               onClick={() => refetchPayments()}
@@ -644,7 +666,7 @@ const DataHuntPage = () => {
               Create Product
             </Button>
             <Button onClick={handleProductsModal} variant="secondary" size="md">
-              View Products ({products.length})
+              View Products ({productsRes?.products?.length})
             </Button>
             <Button
               onClick={() => refetchProducts()}
@@ -664,7 +686,7 @@ const DataHuntPage = () => {
               Create User
             </Button>
             <Button onClick={handleUsersModal} variant="secondary" size="md">
-              View Users
+              View Users ({usersRes?.length})
             </Button>
             <Button
               onClick={() => refetchUsers()}
@@ -779,88 +801,17 @@ const DataHuntPage = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Method
-            </label>
-            <select
-              value={orderForm.payment_method}
-              onChange={(e) =>
-                handleOrderFormChange("payment_method", e.target.value)
-              }
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="credit_card">Credit Card</option>
-              <option value="debit_card">Debit Card</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="cash">Cash</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Shipping Address
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                value={orderForm.shipping_address.street}
-                onChange={(e) =>
-                  handleOrderFormChange("shipping_address", {
-                    ...orderForm.shipping_address,
-                    street: e.target.value,
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Street"
-              />
-              <input
-                type="text"
-                value={orderForm.shipping_address.city}
-                onChange={(e) =>
-                  handleOrderFormChange("shipping_address", {
-                    ...orderForm.shipping_address,
-                    city: e.target.value,
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="City"
-              />
-              <input
-                type="text"
-                value={orderForm.shipping_address.state}
-                onChange={(e) =>
-                  handleOrderFormChange("shipping_address", {
-                    ...orderForm.shipping_address,
-                    state: e.target.value,
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="State"
-              />
-              <input
-                type="text"
-                value={orderForm.shipping_address.zip_code}
-                onChange={(e) =>
-                  handleOrderFormChange("shipping_address", {
-                    ...orderForm.shipping_address,
-                    zip_code: e.target.value,
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="ZIP Code"
-              />
-              <input
-                type="text"
-                value={orderForm.shipping_address.country}
-                onChange={(e) =>
-                  handleOrderFormChange("shipping_address", {
-                    ...orderForm.shipping_address,
-                    country: e.target.value,
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Country"
-              />
-            </div>
+            <input
+              type="text"
+              value={orderForm.shipping_address}
+              onChange={(e) =>
+                handleOrderFormChange("shipping_address", e.target.value)
+              }
+              className="w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Enter full shipping address"
+            />
           </div>
 
           <div>
@@ -1270,7 +1221,94 @@ const DataHuntPage = () => {
           </div>
         </div>
       </Modal>
+      {/* Create User Modal */}
+      <Modal
+        isOpen={isCreateUserOpen}
+        onClose={handleCreateUserModal}
+        title="Create New User"
+        size="xl"
+      >
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium">User Information</h3>
+            <Button onClick={generateUserData} variant="outline" size="sm">
+              Generate Sample Data
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                type="text"
+                value={userForm.name}
+                onChange={(e) => handleUserFormChange("name", e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="Enter name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={userForm.email}
+                onChange={(e) => handleUserFormChange("email", e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="Enter email"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={userForm.password}
+                onChange={(e) =>
+                  handleUserFormChange("password", e.target.value)
+                }
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="Enter password"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <select
+                value={userForm.role}
+                onChange={(e) => handleUserFormChange("role", e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                <option value="admin">Admin</option>
+                <option value="tenant">Tenant</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+          </div>
 
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              onClick={() => setIsCreateUserOpen(false)}
+              variant="secondary"
+              size="md"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateUser}
+              variant="primary"
+              size="md"
+              loading={loading}
+            >
+              Create User
+            </Button>
+          </div>
+        </div>
+      </Modal>
       {/* Create Customer Modal */}
       <Modal
         isOpen={isCreateCustomerOpen}
@@ -1614,9 +1652,9 @@ const DataHuntPage = () => {
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {ordersRes?.orders?.map((order: Order) => (
-                <div key={order._id} className="border p-4 rounded-lg">
+                <div key={order.id} className="border p-4 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold">Order #{order.order_id}</h4>
+                    <h4 className="font-semibold">Order #{order.id}</h4>
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
                         order.status === "delivered"

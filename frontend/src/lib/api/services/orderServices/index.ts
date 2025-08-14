@@ -6,7 +6,7 @@ export interface OrderItem {
   product_name: string;
   quantity: number;
   unit_price: number;
-  subtotal: number;
+  total_price: number;  // Changed from subtotal to total_price to match backend
 }
 
 export interface OrderCreateData {
@@ -15,75 +15,29 @@ export interface OrderCreateData {
   customer_email: string;
   customer_phone?: string;
   items: OrderItem[];
-  shipping_address: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
-  billing_address?: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
-  payment_method: string;
+  shipping_address: string;  // Changed from object to string to match backend
   notes?: string;
 }
 
 export interface OrderUpdateData {
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  items?: OrderItem[];
-  shipping_address?: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
-  billing_address?: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
-  payment_method?: string;
+  status?: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  shipping_address?: string;  // Changed from object to string to match backend
   notes?: string;
 }
 
 export interface Order {
-  _id: string;
-  order_id: string;
+  id: string;  // Changed from _id to id to match backend
   customer_id: string;
   customer_name: string;
   customer_email: string;
   customer_phone?: string;
   items: OrderItem[];
   subtotal: number;
-  tax_amount: number;
+  tax: number;  // Changed from tax_amount to tax to match backend
+  shipping_cost: number;  // Added to match backend
   total_amount: number;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
-  shipping_address: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
-  billing_address?: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
-  payment_method: string;
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  shipping_address: string;  // Changed from object to string to match backend
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -112,8 +66,8 @@ export const updateOrder = (orderId: string, data: OrderUpdateData) => {
   return axoisInstance.put(`/api/v1/orders/${orderId}`, data);
 };
 
-export const updateOrderStatus = (orderId: string, status: string) => {
-  return axoisInstance.patch(`/api/v1/orders/${orderId}/status`, { status });
+export const updateOrderStatus = (orderId: string, status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled') => {
+  return axoisInstance.patch(`/api/v1/orders/${orderId}/status`, status);
 };
 
 export const deleteOrder = (orderId: string) => {

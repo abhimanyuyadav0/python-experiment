@@ -57,7 +57,7 @@ const Button = ({ children, ...props }: ButtonProps) => {
   return (
     <button
       {...rest}
-      className={` ${getVariant()} ${getSize()} rounded-md flex items-center gap-2 ${
+      className={` ${getVariant()} ${getSize()} rounded-md flex items-center justify-center gap-2 ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
       } ${loading ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
       onClick={onClick}

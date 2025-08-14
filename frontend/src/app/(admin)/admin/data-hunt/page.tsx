@@ -1,7 +1,7 @@
 "use client";
 import Button from "@/components/button";
 import Modal from "@/components/modal";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   createOrder,
   getAllOrders,
@@ -30,14 +30,33 @@ import {
 import { toast } from "react-toastify";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getAllUsers, signupUser, User } from "@/lib/api/services/userServices";
+
 interface UserCreateData {
   name: string;
   email: string;
   password: string;
   role: "admin" | "tenant" | "user";
 }
+
+interface BulkOperationStatus {
+  isRunning: boolean;
+  progress: number;
+  total: number;
+  current: number;
+  type: string;
+}
+
 const DataHuntPage = () => {
-  console.log("🎬 DataHuntPage component rendering");
+  // State management
+  const [numberOfDataToGenerate, setNumberOfDataToGenerate] = useState(10);
+  const [bulkOperationStatus, setBulkOperationStatus] =
+    useState<BulkOperationStatus>({
+      isRunning: false,
+      progress: 0,
+      total: 0,
+      current: 0,
+      type: "",
+    });
 
   // Modal states
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
@@ -51,65 +70,15 @@ const DataHuntPage = () => {
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
 
-  const generateRandomName = () => {
-    const firstNames = [
-      "Amit",
-      "Pooja",
-      "Rahul",
-      "Anjali",
-      "Vikas",
-      "Shivani",
-      "Rakesh",
-      "Neha",
-      "Sanjay",
-      "Priya",
-      "Arjun",
-      "Kavita",
-      "Manoj",
-      "Ritu",
-      "Deepak",
-      "Suman",
-    ];
-    const lastNames = [
-      "Yadav",
-      "Singh",
-      "Verma",
-      "Sharma",
-      "Gupta",
-      "Mishra",
-      "Pandey",
-      "Khan",
-      "Chauhan",
-      "Patel",
-      "Tiwari",
-      "Maurya",
-      "Srivastava",
-      "Rathore",
-    ];
-    return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
-      lastNames[Math.floor(Math.random() * lastNames.length)]
-    }`;
-  };
-
-  const generateRandomDate = (startYear: number, endYear: number) => {
-    const start = new Date(startYear, 0, 1);
-    const end = new Date(endYear, 11, 31);
-    const randomDate = new Date(
-      start.getTime() + Math.random() * (end.getTime() - start.getTime())
-    );
-    return randomDate.toISOString().split("T")[0];
-  };
-  // Data states
-  const [loading, setLoading] = useState(false);
-
   // Form states
+  const [loading, setLoading] = useState(false);
   const [orderForm, setOrderForm] = useState<OrderCreateData>({
     customer_id: "",
     customer_name: "",
     customer_email: "",
     customer_phone: "",
     items: [],
-    shipping_address: "", // Changed from object to string to match backend
+    shipping_address: "",
     notes: "",
   });
 
@@ -165,6 +134,34 @@ const DataHuntPage = () => {
     tags: "",
   });
 
+  const [userForm, setUserForm] = useState<UserCreateData>({
+    name: "",
+    email: "",
+    password: "123456",
+    role: "user",
+  });
+
+  const pickRandomUser = () => {
+    const users = usersRes?.map((user: User) => user.id);
+    return String(users?.[Math.floor(Math.random() * users.length)] || "1");
+  };
+
+  // Bulk data storage
+  const [bulkDataStorage, setBulkDataStorage] = useState<{
+    productsData: ProductCreateData[];
+    customersData: CustomerCreateData[];
+    usersData: UserCreateData[];
+    ordersData: OrderCreateData[];
+    paymentsData: PaymentCreateData[];
+  }>({
+    productsData: [],
+    customersData: [],
+    usersData: [],
+    ordersData: [],
+    paymentsData: [],
+  });
+
+  // API queries
   const {
     data: customersRes,
     isLoading: isCustomersLoading,
@@ -173,6 +170,7 @@ const DataHuntPage = () => {
     queryKey: ["customers"],
     queryFn: () => getAllCustomers(),
   });
+
   const {
     data: ordersRes,
     isLoading: isOrdersLoading,
@@ -181,6 +179,7 @@ const DataHuntPage = () => {
     queryKey: ["orders"],
     queryFn: () => getAllOrders(),
   });
+
   const {
     data: productsRes,
     isLoading: isProductsLoading,
@@ -189,6 +188,7 @@ const DataHuntPage = () => {
     queryKey: ["products"],
     queryFn: () => getAllProducts(),
   });
+
   const {
     data: paymentsRes,
     isLoading: isPaymentsLoading,
@@ -197,6 +197,7 @@ const DataHuntPage = () => {
     queryKey: ["payments"],
     queryFn: () => getAllPayments(),
   });
+
   const {
     data: usersRes,
     isLoading: isUsersLoading,
@@ -204,6 +205,560 @@ const DataHuntPage = () => {
   } = useQuery({
     queryKey: ["users"],
     queryFn: () => getAllUsers(),
+  });
+
+  // Mutations
+  const { mutate: createPaymentMutation } = useMutation({
+    mutationFn: (payment: PaymentCreateData) => createPayment(payment),
+    onSuccess: () => {
+      refetchPayments();
+      toast.success("Payment created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create payment");
+    },
+  });
+
+  const { mutate: createOrderMutation } = useMutation({
+    mutationFn: (order: OrderCreateData) => createOrder(order),
+    onSuccess: () => {
+      refetchOrders();
+      toast.success("Order created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create order");
+    },
+  });
+
+  const { mutate: createProductMutation } = useMutation({
+    mutationFn: (product: ProductCreateData) => createProduct(product),
+    onSuccess: () => {
+      refetchProducts();
+      toast.success("Product created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create product");
+    },
+  });
+
+  const { mutate: createCustomerMutation } = useMutation({
+    mutationFn: (customer: CustomerCreateData) => createCustomer(customer),
+    onSuccess: () => {
+      refetchCustomers();
+      toast.success("Customer created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create customer");
+    },
+  });
+
+  const { mutate: createUserMutation } = useMutation({
+    mutationFn: (user: UserCreateData) =>
+      signupUser({
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        is_active: true,
+        role: user.role,
+      }),
+    onSuccess: () => {
+      refetchUsers();
+      toast.success("User created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create user");
+    },
+  });
+
+  // Utility functions
+  const generateRandomName = () => {
+    const firstNames = ["Amit", "Pooja", "Rahul", "Anjali", "Vikas", "Shivani"];
+    const lastNames = ["Yadav", "Singh", "Verma", "Sharma", "Gupta", "Mishra"];
+    return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
+      lastNames[Math.floor(Math.random() * lastNames.length)]
+    }`;
+  };
+
+  const generateRandomDate = (startYear: number, endYear: number) => {
+    const start = new Date(startYear, 0, 1);
+    const end = new Date(endYear, 11, 31);
+    const randomDate = new Date(
+      start.getTime() + Math.random() * (end.getTime() - start.getTime())
+    );
+    return randomDate.toISOString().split("T")[0];
+  };
+
+  // Enhanced bulk data generation
+  const generateBulkData = async () => {
+    if (numberOfDataToGenerate <= 0 || numberOfDataToGenerate > 1000) {
+      toast.error("Please enter a valid number between 1 and 1000");
+      return;
+    }
+
+    setBulkOperationStatus({
+      isRunning: true,
+      progress: 0,
+      total: numberOfDataToGenerate * 5,
+      current: 0,
+      type: "Generating data...",
+    });
+
+    const newBulkData = {
+      productsData: [] as ProductCreateData[],
+      customersData: [] as CustomerCreateData[],
+      usersData: [] as UserCreateData[],
+      ordersData: [] as OrderCreateData[],
+      paymentsData: [] as PaymentCreateData[],
+    };
+
+    try {
+      for (let i = 0; i < numberOfDataToGenerate; i++) {
+        // Generate user data
+        const userData = {
+          name: generateRandomName(),
+          email: `user${Math.random().toString(36).substr(2, 6)}@example.com`,
+          password: "123456",
+          role: ["admin", "tenant", "user"][Math.floor(Math.random() * 3)] as
+            | "admin"
+            | "tenant"
+            | "user",
+        };
+        newBulkData.usersData.push(userData);
+        setBulkOperationStatus((prev) => ({
+          ...prev,
+          current: prev.current + 1,
+        }));
+
+        // Generate customer data
+        const customerData = {
+          first_name: generateRandomName().split(" ")[0],
+          last_name: generateRandomName().split(" ")[1] || "Smith",
+          email: `customer${Math.random()
+            .toString(36)
+            .substr(2, 6)}@example.com`,
+          phone: `+1-555-${Math.random()
+            .toString()
+            .substr(2, 3)}-${Math.random().toString().substr(2, 4)}`,
+          address_line1: `${Math.floor(Math.random() * 9999) + 1} Main St`,
+          address_line2: "",
+          city: ["New York", "Los Angeles", "Chicago"][
+            Math.floor(Math.random() * 3)
+          ],
+          state: ["NY", "CA", "IL"][Math.floor(Math.random() * 3)],
+          postal_code: Math.floor(Math.random() * 99999 + 10000).toString(),
+          country: "USA",
+          date_of_birth: generateRandomDate(1980, 2000),
+          gender: "prefer_not_to_say" as
+            | "other"
+            | "male"
+            | "female"
+            | "prefer_not_to_say",
+          company_name: "",
+          tax_id: "",
+          marketing_emails: true,
+          marketing_sms: false,
+          notes: "Sample customer for testing purposes",
+          tags: "sample,test,dummy",
+        };
+        newBulkData.customersData.push(customerData);
+        setBulkOperationStatus((prev) => ({
+          ...prev,
+          current: prev.current + 1,
+        }));
+
+        // Generate product data
+        const productData = {
+          name: `Product ${i + 1}`,
+          description: `Description for product ${i + 1}`,
+          sku: `SKU_${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          created_by: pickRandomUser(),
+          category: "electronics" as
+            | "electronics"
+            | "clothing"
+            | "books"
+            | "home_garden"
+            | "sports"
+            | "beauty"
+            | "automotive"
+            | "toys"
+            | "food_beverage"
+            | "health"
+            | "other",
+          brand: "Brand",
+          base_price: Math.floor(Math.random() * 1000) + 99.99,
+          is_taxable: true,
+        };
+        newBulkData.productsData.push(productData);
+        setBulkOperationStatus((prev) => ({
+          ...prev,
+          current: prev.current + 1,
+        }));
+
+        // Generate order data
+        const orderData = {
+          customer_id: customerData.email,
+          customer_name: `${customerData.first_name} ${customerData.last_name}`,
+          customer_email: customerData.email,
+          customer_phone: customerData.phone,
+          items: [
+            {
+              product_id: productData.sku,
+              product_name: productData.name,
+              quantity: Math.floor(Math.random() * 10) + 1,
+              unit_price: productData.base_price,
+              total_price: productData.base_price,
+            },
+          ],
+          shipping_address: `${customerData.address_line1}, ${customerData.city}, ${customerData.state}`,
+          notes: "Please deliver during business hours",
+        };
+        newBulkData.ordersData.push(orderData);
+        setBulkOperationStatus((prev) => ({
+          ...prev,
+          current: prev.current + 1,
+        }));
+
+        // Generate payment data
+        const paymentData = {
+          order_id: customerData.email,
+          customer_id: customerData.email,
+          amount: productData.base_price,
+          currency: "USD" as
+            | "USD"
+            | "EUR"
+            | "GBP"
+            | "CAD"
+            | "AUD"
+            | "JPY"
+            | "INR"
+            | "CNY"
+            | "BRL"
+            | "MXN",
+          payment_method: {
+            method_type: "credit_card" as
+              | "other"
+              | "credit_card"
+              | "debit_card"
+              | "bank_transfer"
+              | "digital_wallet"
+              | "cryptocurrency"
+              | "cash"
+              | "check",
+            provider: "stripe" as
+              | "stripe"
+              | "paypal"
+              | "square"
+              | "braintree"
+              | "adyen"
+              | "razorpay"
+              | "custom",
+            last_four: Math.floor(Math.random() * 9999)
+              .toString()
+              .padStart(4, "0"),
+            card_brand: "visa",
+            expiry_month: Math.floor(Math.random() * 12) + 1,
+            expiry_year:
+              new Date().getFullYear() + Math.floor(Math.random() * 5) + 1,
+          },
+          capture_method: "automatic",
+          description: `Payment for order by ${customerData.first_name}`,
+          metadata: { source: "web", campaign: "bulk_data_generation" },
+          receipt_email: customerData.email,
+          application_fee_amount: 0,
+          statement_descriptor: "BULK_DATA_TEST",
+        };
+        newBulkData.paymentsData.push(paymentData);
+        setBulkOperationStatus((prev) => ({
+          ...prev,
+          current: prev.current + 1,
+        }));
+
+        // Update progress
+        setBulkOperationStatus((prev) => ({
+          ...prev,
+          progress: Math.round((prev.current / prev.total) * 100),
+        }));
+      }
+
+      setBulkDataStorage(newBulkData);
+      toast.success(
+        `Generated ${numberOfDataToGenerate} records of each type successfully!`
+      );
+    } catch (error) {
+      console.error("Error generating bulk data:", error);
+      toast.error("Failed to generate bulk data");
+    } finally {
+      setBulkOperationStatus({
+        isRunning: false,
+        progress: 0,
+        total: 0,
+        current: 0,
+        type: "",
+      });
+    }
+  };
+
+  // Bulk operations
+  const executeBulkOperation = async (
+    operation: () => Promise<void>,
+    type: string,
+    total: number
+  ) => {
+    setBulkOperationStatus({
+      isRunning: true,
+      progress: 0,
+      total,
+      current: 0,
+      type,
+    });
+
+    try {
+      await operation();
+      toast.success(`${type} completed successfully!`);
+    } catch (error) {
+      console.error(`Error in ${type}:`, error);
+      toast.error(`Failed to complete ${type}`);
+    } finally {
+      setBulkOperationStatus({
+        isRunning: false,
+        progress: 0,
+        total: 0,
+        current: 0,
+        type: "",
+      });
+    }
+  };
+
+  const handleBulkDataStorage = async () => {
+    const totalOperations =
+      bulkDataStorage.productsData.length +
+      bulkDataStorage.customersData.length +
+      bulkDataStorage.usersData.length +
+      bulkDataStorage.ordersData.length +
+      bulkDataStorage.paymentsData.length;
+
+    if (totalOperations === 0) {
+      toast.error("No data to store. Please generate data first.");
+      return;
+    }
+
+    await executeBulkOperation(
+      async () => {
+        let current = 0;
+
+        // Store products
+        for (const product of bulkDataStorage.productsData) {
+          await createProductMutation(product);
+          current++;
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current,
+            progress: Math.round((current / totalOperations) * 100),
+          }));
+        }
+
+        // Store customers
+        for (const customer of bulkDataStorage.customersData) {
+          await createCustomerMutation(customer);
+          current++;
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current,
+            progress: Math.round((current / totalOperations) * 100),
+          }));
+        }
+
+        // Store users
+        for (const user of bulkDataStorage.usersData) {
+          await createUserMutation(user);
+          current++;
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current,
+            progress: Math.round((current / totalOperations) * 100),
+          }));
+        }
+
+        // Store orders
+        for (const order of bulkDataStorage.ordersData) {
+          await createOrderMutation(order);
+          current++;
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current,
+            progress: Math.round((current / totalOperations) * 100),
+          }));
+        }
+
+        // Store payments
+        for (const payment of bulkDataStorage.paymentsData) {
+          await createPaymentMutation(payment);
+          current++;
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current,
+            progress: Math.round((current / totalOperations) * 100),
+          }));
+        }
+
+        // Refresh all data
+        await Promise.all([
+          refetchProducts(),
+          refetchCustomers(),
+          refetchUsers(),
+          refetchOrders(),
+          refetchPayments(),
+        ]);
+      },
+      "Bulk data storage",
+      totalOperations
+    );
+  };
+
+  const handleProductBulkDataStorage = async () => {
+    if (bulkDataStorage.productsData.length === 0) {
+      toast.error("No product data to store. Please generate data first.");
+      return;
+    }
+
+    await executeBulkOperation(
+      async () => {
+        for (let i = 0; i < bulkDataStorage.productsData.length; i++) {
+          await createProductMutation(bulkDataStorage.productsData[i]);
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current: i + 1,
+            progress: Math.round(
+              ((i + 1) / bulkDataStorage.productsData.length) * 100
+            ),
+          }));
+        }
+        await refetchProducts();
+      },
+      "Product bulk storage",
+      bulkDataStorage.productsData.length
+    );
+  };
+
+  const handleCustomerBulkDataStorage = async () => {
+    if (bulkDataStorage.customersData.length === 0) {
+      toast.error("No customer data to store. Please generate data first.");
+      return;
+    }
+
+    await executeBulkOperation(
+      async () => {
+        for (let i = 0; i < bulkDataStorage.customersData.length; i++) {
+          await createCustomerMutation(bulkDataStorage.customersData[i]);
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current: i + 1,
+            progress: Math.round(
+              ((i + 1) / bulkDataStorage.customersData.length) * 100
+            ),
+          }));
+        }
+        await refetchCustomers();
+      },
+      "Customer bulk storage",
+      bulkDataStorage.customersData.length
+    );
+  };
+
+  const handleUserBulkDataStorage = async () => {
+    if (bulkDataStorage.usersData.length === 0) {
+      toast.error("No user data to store. Please generate data first.");
+      return;
+    }
+
+    await executeBulkOperation(
+      async () => {
+        for (let i = 0; i < bulkDataStorage.usersData.length; i++) {
+          await createUserMutation(bulkDataStorage.usersData[i]);
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current: i + 1,
+            progress: Math.round(
+              ((i + 1) / bulkDataStorage.usersData.length) * 100
+            ),
+          }));
+        }
+        await refetchUsers();
+      },
+      "User bulk storage",
+      bulkDataStorage.usersData.length
+    );
+  };
+
+  const handleOrderBulkDataStorage = async () => {
+    if (bulkDataStorage.ordersData.length === 0) {
+      toast.error("No order data to store. Please generate data first.");
+      return;
+    }
+
+    await executeBulkOperation(
+      async () => {
+        for (let i = 0; i < bulkDataStorage.ordersData.length; i++) {
+          await createOrderMutation(bulkDataStorage.ordersData[i]);
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current: i + 1,
+            progress: Math.round(
+              ((i + 1) / bulkDataStorage.ordersData.length) * 100
+            ),
+          }));
+        }
+        await refetchOrders();
+      },
+      "Order bulk storage",
+      bulkDataStorage.ordersData.length
+    );
+  };
+
+  const handlePaymentBulkDataStorage = async () => {
+    if (bulkDataStorage.paymentsData.length === 0) {
+      toast.error("No payment data to store. Please generate data first.");
+      return;
+    }
+
+    await executeBulkOperation(
+      async () => {
+        for (let i = 0; i < bulkDataStorage.paymentsData.length; i++) {
+          await createPaymentMutation(bulkDataStorage.paymentsData[i]);
+          setBulkOperationStatus((prev) => ({
+            ...prev,
+            current: i + 1,
+            progress: Math.round(
+              ((i + 1) / bulkDataStorage.paymentsData.length) * 100
+            ),
+          }));
+        }
+        await refetchPayments();
+      },
+      "Payment bulk storage",
+      bulkDataStorage.paymentsData.length
+    );
+  };
+
+  // Clear bulk data
+  const clearBulkData = () => {
+    setBulkDataStorage({
+      productsData: [],
+      customersData: [],
+      usersData: [],
+      ordersData: [],
+      paymentsData: [],
+    });
+    toast.success("Bulk data cleared successfully!");
+  };
+
+  // Get bulk data counts
+  const getBulkDataCounts = () => ({
+    products: bulkDataStorage.productsData.length,
+    customers: bulkDataStorage.customersData.length,
+    users: bulkDataStorage.usersData.length,
+    orders: bulkDataStorage.ordersData.length,
+    payments: bulkDataStorage.paymentsData.length,
   });
 
   // Modal handlers
@@ -217,6 +772,7 @@ const DataHuntPage = () => {
     setIsCreateProductOpen(!isCreateProductOpen);
   const handleCreatePaymentModal = () =>
     setIsCreatePaymentOpen(!isCreatePaymentOpen);
+  const handleCreateUserModal = () => setIsCreateUserOpen(!isCreateUserOpen);
   const handleCreateCustomerModal = () =>
     setIsCreateCustomerOpen(!isCreateCustomerOpen);
 
@@ -246,36 +802,10 @@ const DataHuntPage = () => {
     setCustomerForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const { mutate: createPaymentMutation } = useMutation({
-    mutationFn: (payment: PaymentCreateData) => createPayment(payment),
-    onSuccess: () => {
-      refetchPayments();
-      toast.success("Payment created successfully!");
-    },
-    onError: () => {
-      toast.error("Failed to create payment");
-    },
-  });
-  const { mutate: createOrderMutation } = useMutation({
-    mutationFn: (order: OrderCreateData) => createOrder(order),
-    onSuccess: () => {
-      refetchOrders();
-      toast.success("Order created successfully!");
-    },
-    onError: () => {
-      toast.error("Failed to create order");
-    },
-  });
-  const { mutate: createProductMutation } = useMutation({
-    mutationFn: (product: ProductCreateData) => createProduct(product),
-    onSuccess: () => {
-      refetchProducts();
-      toast.success("Product created successfully!");
-    },
-    onError: () => {
-      toast.error("Failed to create product");
-    },
-  });
+  const handleUserFormChange = (field: keyof UserCreateData, value: any) => {
+    setUserForm((prev) => ({ ...prev, [field]: value }));
+  };
+
   // Submit handlers
   const handleCreateOrder = async () => {
     try {
@@ -288,7 +818,7 @@ const DataHuntPage = () => {
         customer_email: "",
         customer_phone: "",
         items: [],
-        shipping_address: "", // Changed from object to string to match backend
+        shipping_address: "",
         notes: "",
       });
     } catch (error) {
@@ -312,6 +842,7 @@ const DataHuntPage = () => {
         brand: "",
         base_price: 0,
         is_taxable: true,
+        created_by: "",
       });
     } catch (error) {
       console.error("Error creating product:", error);
@@ -353,16 +884,7 @@ const DataHuntPage = () => {
       setLoading(false);
     }
   };
-  const { mutate: createCustomerMutation } = useMutation({
-    mutationFn: (customer: CustomerCreateData) => createCustomer(customer),
-    onSuccess: () => {
-      refetchCustomers();
-      toast.success("Customer created successfully!");
-    },
-    onError: () => {
-      toast.error("Failed to create customer");
-    },
-  });
+
   const handleCreateCustomer = async () => {
     try {
       setLoading(true);
@@ -395,33 +917,7 @@ const DataHuntPage = () => {
       setLoading(false);
     }
   };
-  const { mutate: createUserMutation } = useMutation({
-    mutationFn: (user: UserCreateData) =>
-      signupUser({
-        name: user.name,
-        email: user.email,
-        password: user.password,
-        is_active: true,
-        role: user.role,
-      }),
-    onSuccess: () => {
-      refetchUsers();
-      toast.success("User created successfully!");
-    },
-    onError: () => {
-      toast.error("Failed to create user");
-    },
-  });
-  const [userForm, setUserForm] = useState<UserCreateData>({
-    name: "",
-    email: "",
-    password: "123456",
-    role: "user",
-  });
-  const handleCreateUserModal = () => setIsCreateUserOpen(!isCreateUserOpen);
-  const handleUserFormChange = (field: keyof UserCreateData, value: any) => {
-    setUserForm((prev) => ({ ...prev, [field]: value }));
-  };
+
   const handleCreateUser = async () => {
     try {
       setLoading(true);
@@ -435,6 +931,7 @@ const DataHuntPage = () => {
     }
   };
 
+  // Order item management
   const addOrderItem = () => {
     const newItem: OrderItem = {
       product_id: "",
@@ -469,270 +966,165 @@ const DataHuntPage = () => {
     }));
   };
 
-  const pickRandomCustomer = async () => {
+  // Sample data generators
+  const generateOrderData = async () => {
     const customersData = customersRes?.customers?.map(
       (customer: Customer) => customer
     );
+    if (!customersData || customersData.length === 0) {
+      toast.error("No customers found");
+      return;
+    }
     const randomIndex = Math.floor(Math.random() * customersData.length);
-    return customersData[randomIndex];
-  };
-  const pickRandomProduct = async () => {
-    const productsData =
-      productsRes?.products?.map((product: Product) => product) || [];
+    const customer = customersData[randomIndex];
 
-    if (productsData.length === 0) return [];
-
-    // Decide how many products to pick (1 up to productsData.length)
-    const count = Math.floor(Math.random() * productsData.length) + 1;
-
-    // Shuffle and pick first `count` items
-    const shuffled = [...productsData].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-  };
-
-  // Generate dummy data functions
-  const generateOrderData = async () => {
-    const customer = await pickRandomCustomer();
-    const products = await pickRandomProduct();
-    if (products?.length === 0) {
+    const productsData = productsRes?.products?.map(
+      (product: Product) => product
+    );
+    if (!productsData || productsData.length === 0) {
       toast.error("No products found");
       return;
     }
-    console.log("products", products);
+    const randomProductIndex = Math.floor(Math.random() * productsData.length);
+    const product = productsData[randomProductIndex];
+
     const dummyOrder: OrderCreateData = {
       customer_id: customer.username,
       customer_name: customer.first_name + " " + customer.last_name,
       customer_email: customer.email,
       customer_phone: customer.phone,
-      items: products.map((product: Product) => ({
-        product_id: product.id,
-        product_name: product.name,
-        quantity: Math.floor(Math.random() * 10) + 1,
-        unit_price: product.base_price,
-        total_price: product.base_price,
-      })),
+      items: [
+        {
+          product_id: product.id,
+          product_name: product.name,
+          quantity: Math.floor(Math.random() * 10) + 1,
+          unit_price: product.base_price,
+          total_price: product.base_price,
+        },
+      ],
       shipping_address: "123 Main Street, New York, NY 10001, USA",
       notes: "Please deliver during business hours",
-      payment_id: "",
     };
     setOrderForm(dummyOrder);
   };
 
-  const pickRandomUser = async () => {
-    const usersData = usersRes?.map((user: User) => user);
-    const randomIndex = Math.floor(Math.random() * usersData.length);
-    return usersData[randomIndex];
-  };
-  const generateRandomProduct = (createdById: string) => {
+  const generateProductData = async () => {
     const names = [
       "Smartphone X Pro",
       "UltraSound Wireless Earbuds",
       "SmartFit Fitness Band",
       "VisionPlus 4K TV",
-      "EcoBrew Coffee Maker",
-      "HyperDrive Gaming Laptop",
-      "AeroCool Air Purifier",
-      "PulsePro Smartwatch",
     ];
-
     const descriptions = [
-      "Latest smartphone with advanced features, high-resolution camera, and long battery life",
-      "High-quality wireless earbuds with noise cancellation and 24-hour battery life",
-      "Track your fitness journey with heart rate monitoring and step counting",
-      "Crystal clear 4K display with HDR support and smart features",
-      "Brew fresh coffee with eco-friendly features",
-      "High-speed gaming with powerful graphics",
-      "Purifies air for a healthy living environment",
-      "Smart notifications and health tracking on your wrist",
+      "Latest smartphone with advanced features",
+      "High-quality wireless earbuds",
+      "Track your fitness journey",
+      "Crystal clear 4K display",
     ];
-
-    const categories = [
-      "electronics",
-      "clothing",
-      "books",
-      "home_garden",
-      "sports",
-      "beauty",
-      "automotive",
-      "toys",
-      "food_beverage",
-      "health",
-      "other",
-    ];
-    const brands = [
-      "TechCorp",
-      "SoundWave",
-      "FitTrack",
-      "VisionPlus",
-      "EcoBrew",
-      "HyperDrive",
-      "AeroCool",
-      "PulsePro",
-    ];
-
-    const tagsList = [
-      ["smartphone", "5G", "camera", "battery"],
-      ["earbuds", "wireless", "audio", "music"],
-      ["fitness", "band", "tracker", "health"],
-      ["tv", "4k", "hdr", "entertainment"],
-      ["coffee", "kitchen", "eco", "brew"],
-      ["laptop", "gaming", "performance", "speed"],
-      ["air", "purifier", "home", "clean"],
-      ["watch", "smart", "health", "notifications"],
-    ];
-
-    const variantsList = [
-      [
-        { name: "Color", value: "Midnight Black", price_adjustment: 0 },
-        { name: "Storage", value: "128GB", price_adjustment: 0 },
-      ],
-      [
-        { name: "Color", value: "White", price_adjustment: 0 },
-        { name: "Case", value: "Leather", price_adjustment: 15 },
-      ],
-      [
-        { name: "Color", value: "Blue", price_adjustment: 0 },
-        { name: "Band Type", value: "Silicone", price_adjustment: 0 },
-      ],
-      [
-        { name: "Size", value: "55-inch", price_adjustment: 0 },
-        { name: "Panel", value: "OLED", price_adjustment: 100 },
-      ],
-      [
-        { name: "Color", value: "Black", price_adjustment: 0 },
-        { name: "Capacity", value: "1L", price_adjustment: 0 },
-      ],
-      [
-        { name: "RAM", value: "16GB", price_adjustment: 50 },
-        { name: "Storage", value: "512GB SSD", price_adjustment: 100 },
-      ],
-      [
-        { name: "Coverage Area", value: "500 sq ft", price_adjustment: 0 },
-        { name: "Filter Type", value: "HEPA", price_adjustment: 20 },
-      ],
-      [
-        { name: "Color", value: "Black", price_adjustment: 0 },
-        { name: "Strap", value: "Metal", price_adjustment: 25 },
-      ],
-    ];
-
-    const specsList = [
-      [
-        { key: "Screen Size", value: "6.1 inches", unit: "inches" },
-        { key: "Battery Capacity", value: "4000", unit: "mAh" },
-      ],
-      [
-        { key: "Battery Life", value: "24", unit: "hours" },
-        { key: "Bluetooth Version", value: "5.2", unit: "" },
-      ],
-      [
-        { key: "Battery Life", value: "7", unit: "days" },
-        { key: "Water Resistance", value: "IP68", unit: "" },
-      ],
-      [
-        { key: "Resolution", value: "3840 x 2160", unit: "pixels" },
-        { key: "Refresh Rate", value: "120", unit: "Hz" },
-      ],
-      [
-        { key: "Capacity", value: "1L", unit: "liters" },
-        { key: "Power", value: "1200", unit: "watts" },
-      ],
-      [
-        { key: "Processor", value: "Intel i7", unit: "" },
-        { key: "Graphics", value: "RTX 3060", unit: "" },
-      ],
-      [
-        { key: "Coverage Area", value: "500", unit: "sq ft" },
-        { key: "Filter Type", value: "HEPA", unit: "" },
-      ],
-      [
-        { key: "Display", value: "1.5 inches", unit: "inches" },
-        { key: "Battery Life", value: "5", unit: "days" },
-      ],
-    ];
-
     const randomIndex = Math.floor(Math.random() * names.length);
 
-    return {
+    const product = {
       name: names[randomIndex],
       description: descriptions[randomIndex],
       sku: `SKU_${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      category: categories[Math.floor(Math.random() * categories.length)],
-      brand: brands[randomIndex],
-      base_price: 899.99,
-      compare_price: 799.99,
-      cost_price: 450.0,
-      weight: 0.18,
-      dimensions: { length: 15.5, width: 7.5, height: 0.8 },
-      images: [
-        {
-          url: `https://example.com/images/product-${randomIndex + 1}.jpg`,
-          alt_text: `${names[randomIndex]} Front View`,
-          is_primary: true,
-        },
-      ],
-      variants: variantsList[randomIndex],
-      specifications: specsList[randomIndex],
-      tags: tagsList[randomIndex],
-      is_featured: true,
+      category: "electronics" as
+        | "electronics"
+        | "clothing"
+        | "books"
+        | "home_garden"
+        | "sports"
+        | "beauty"
+        | "automotive"
+        | "toys"
+        | "food_beverage"
+        | "health"
+        | "other",
+      brand: "TechCorp",
+      base_price: Math.floor(Math.random() * 1000) + 99.99,
       is_taxable: true,
-      meta_title: `${names[randomIndex]} - Latest Technology`,
-      meta_description: descriptions[randomIndex],
-      created_by: String(createdById),
+      created_by: pickRandomUser(),
     };
-  };
-
-  const generateProductData = async () => {
-    const user = await pickRandomUser();
-    const product = generateRandomProduct(user.id);
-    setProductForm(product as ProductCreateData);
-  };
-
-  const pickRandomOrder = async () => {
-    const ordersData = ordersRes?.orders?.map((order: Order) => order);
-    const randomIndex = Math.floor(Math.random() * ordersData.length);
-    return ordersData[randomIndex];
+    setProductForm(product);
   };
 
   const generatePaymentData = async () => {
-    const order = await pickRandomOrder();
-    const customer = await pickRandomCustomer();
-    if (!order || !customer) {
-      toast.error("No order or customer found");
+    const ordersData = ordersRes?.orders?.map((order: Order) => order);
+    const customersData = customersRes?.customers?.map(
+      (customer: Customer) => customer
+    );
+
+    if (
+      !ordersData ||
+      ordersData.length === 0 ||
+      !customersData ||
+      customersData.length === 0
+    ) {
+      toast.error("No orders or customers found");
       return;
     }
-    console.log("order", order);
+
+    const randomOrderIndex = Math.floor(Math.random() * ordersData.length);
+    const randomCustomerIndex = Math.floor(
+      Math.random() * customersData.length
+    );
+    const order = ordersData[randomOrderIndex];
+    const customer = customersData[randomCustomerIndex];
+
     const dummyPayment: PaymentCreateData = {
       order_id: order.id,
       customer_id: customer.username,
       amount: Number(order.total_amount),
-      currency: "USD",
+      currency: "USD" as
+        | "USD"
+        | "EUR"
+        | "GBP"
+        | "CAD"
+        | "AUD"
+        | "JPY"
+        | "INR"
+        | "CNY"
+        | "BRL"
+        | "MXN",
       payment_method: {
-        method_type: "credit_card",
-        provider: "stripe",
+        method_type: "credit_card" as
+          | "other"
+          | "credit_card"
+          | "debit_card"
+          | "bank_transfer"
+          | "digital_wallet"
+          | "cryptocurrency"
+          | "cash"
+          | "check",
+        provider: "stripe" as
+          | "stripe"
+          | "paypal"
+          | "square"
+          | "braintree"
+          | "adyen"
+          | "razorpay"
+          | "custom",
         last_four: "4242",
         card_brand: "visa",
         expiry_month: 12,
         expiry_year: 2026,
       },
       description: "Payment for electronics order",
-      metadata: {
-        source: "web",
-        campaign: "summer_sale_2024",
-      },
+      metadata: { source: "web", campaign: "summer_sale_2024" },
       capture_method: "automatic",
     };
     setPaymentForm(dummyPayment);
   };
+
   const generateUserData = () => {
     const dummyUser: UserCreateData = {
       name: generateRandomName(),
       email: `user${Math.random().toString(36).substr(2, 6)}@example.com`,
       password: "123456",
-      role: "user",
+      role: "user" as "admin" | "tenant" | "user",
     };
     setUserForm(dummyUser);
   };
+
   const generateCustomerData = () => {
     const dummyCustomer: CustomerCreateData = {
       first_name: generateRandomName().split(" ")[0],
@@ -741,44 +1133,26 @@ const DataHuntPage = () => {
       phone: `+1-555-${Math.random().toString().substr(2, 3)}-${Math.random()
         .toString()
         .substr(2, 4)}`,
-      address_line1: `${Math.floor(Math.random() * 9999) + 1} ${
-        ["Main St", "Oak Ave", "Pine Rd", "Elm Blvd"][
-          Math.floor(Math.random() * 4)
-        ]
-      }`,
-      address_line2:
-        Math.random() > 0.5 ? `Apt ${Math.floor(Math.random() * 999) + 1}` : "",
-      city: [
-        "New York",
-        "Los Angeles",
-        "Chicago",
-        "Houston",
-        "Phoenix",
-        "Philadelphia",
-        "San Antonio",
-        "San Diego",
-      ][Math.floor(Math.random() * 8)],
-      state: ["NY", "CA", "IL", "TX", "AZ", "PA", "FL", "OH"][
-        Math.floor(Math.random() * 8)
+      address_line1: `${Math.floor(Math.random() * 9999) + 1} Main St`,
+      address_line2: "",
+      city: ["New York", "Los Angeles", "Chicago"][
+        Math.floor(Math.random() * 3)
       ],
+      state: ["NY", "CA", "IL"][Math.floor(Math.random() * 3)],
       postal_code: Math.floor(Math.random() * 99999 + 10000).toString(),
       country: "USA",
       date_of_birth: generateRandomDate(1980, 2000),
-      gender: ["male", "female", "other", "prefer_not_to_say"][
-        Math.floor(Math.random() * 4)
-      ] as "male" | "female" | "other" | "prefer_not_to_say",
-      company_name:
-        Math.random() > 0.3
-          ? `Company ${Math.random().toString(36).substr(2, 6).toUpperCase()}`
-          : "",
-      tax_id:
-        Math.random() > 0.5
-          ? `TAX-${Math.random().toString(36).substr(2, 8).toUpperCase()}`
-          : "",
-      marketing_emails: Math.random() > 0.3,
-      marketing_sms: Math.random() > 0.7,
-      notes: Math.random() > 0.5 ? "Sample customer for testing purposes" : "",
-      tags: ["sample", "test", "dummy"].join(", "),
+      gender: "prefer_not_to_say" as
+        | "other"
+        | "male"
+        | "female"
+        | "prefer_not_to_say",
+      company_name: "",
+      tax_id: "",
+      marketing_emails: true,
+      marketing_sms: false,
+      notes: "Sample customer for testing purposes",
+      tags: "sample,test,dummy",
     };
     setCustomerForm(dummyCustomer);
   };
@@ -789,6 +1163,154 @@ const DataHuntPage = () => {
       <p className="text-gray-600 mb-6">
         Data Hunt is a platform for finding and analyzing data.
       </p>
+
+      {/* Enhanced Bulk Data Section */}
+      <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold">
+            Bulk Data Generation & Management
+          </h3>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              className="w-32 p-2 border border-gray-300 rounded-md"
+              name="numberOfDataToGenerate"
+              value={numberOfDataToGenerate}
+              onChange={(e) =>
+                setNumberOfDataToGenerate(parseInt(e.target.value) || 0)
+              }
+              placeholder="Count"
+              min="1"
+              max="1000"
+            />
+            <Button
+              className="min-w-[180px]"
+              onClick={() => generateBulkData()}
+              size="md"
+              disabled={bulkOperationStatus.isRunning}
+            >
+              {bulkOperationStatus.isRunning
+                ? "Generating..."
+                : "Generate Bulk Data"}
+            </Button>
+            <Button
+              onClick={clearBulkData}
+              variant="outline"
+              size="md"
+              disabled={Object.values(getBulkDataCounts()).every(
+                (count) => count === 0
+              )}
+            >
+              Clear All
+            </Button>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        {bulkOperationStatus.isRunning && (
+          <div className="mb-4">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>{bulkOperationStatus.type}</span>
+              <span>
+                {bulkOperationStatus.current} / {bulkOperationStatus.total}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${bulkOperationStatus.progress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Data Counts */}
+        <div className="grid grid-cols-5 gap-4 mb-4">
+          {Object.entries(getBulkDataCounts()).map(([type, count]) => (
+            <div key={type} className="text-center p-3 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{count}</div>
+              <div className="text-sm text-gray-600 capitalize">{type}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bulk Storage Buttons */}
+        <div className="grid grid-cols-5 gap-3">
+          <Button
+            onClick={handleProductBulkDataStorage}
+            variant="primary"
+            size="md"
+            disabled={
+              bulkDataStorage.productsData.length === 0 ||
+              bulkOperationStatus.isRunning
+            }
+          >
+            Store Products ({bulkDataStorage.productsData.length})
+          </Button>
+          <Button
+            onClick={handleCustomerBulkDataStorage}
+            variant="primary"
+            size="md"
+            disabled={
+              bulkDataStorage.customersData.length === 0 ||
+              bulkOperationStatus.isRunning
+            }
+          >
+            Store Customers ({bulkDataStorage.customersData.length})
+          </Button>
+          <Button
+            onClick={handleUserBulkDataStorage}
+            variant="primary"
+            size="md"
+            disabled={
+              bulkDataStorage.usersData.length === 0 ||
+              bulkOperationStatus.isRunning
+            }
+          >
+            Store Users ({bulkDataStorage.usersData.length})
+          </Button>
+          <Button
+            onClick={handleOrderBulkDataStorage}
+            variant="primary"
+            size="md"
+            disabled={
+              bulkDataStorage.ordersData.length === 0 ||
+              bulkOperationStatus.isRunning
+            }
+          >
+            Store Orders ({bulkDataStorage.ordersData.length})
+          </Button>
+          <Button
+            onClick={handlePaymentBulkDataStorage}
+            variant="primary"
+            size="md"
+            disabled={
+              bulkDataStorage.paymentsData.length === 0 ||
+              bulkOperationStatus.isRunning
+            }
+          >
+            Store Payments ({bulkDataStorage.paymentsData.length})
+          </Button>
+        </div>
+
+        {/* Store All Button */}
+        <div className="mt-4">
+          <Button
+            onClick={handleBulkDataStorage}
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            disabled={
+              Object.values(getBulkDataCounts()).every(
+                (count) => count === 0
+              ) || bulkOperationStatus.isRunning
+            }
+          >
+            Store All Generated Data
+          </Button>
+        </div>
+      </div>
+
       <h3 className="text-xl font-semibold mb-4">Data Hunt Postgres</h3>
       <div className="grid grid-cols-3 gap-6">
         {/* Orders Section */}
@@ -861,22 +1383,6 @@ const DataHuntPage = () => {
               refetch
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              name="numberOfProductsToGenerate"
-              value={productForm.name}
-              onChange={(e) => handleProductFormChange("name", e.target.value)}
-              placeholder="Product Name"
-            />
-            <Button
-              onClick={() => handleProductFormChange("name", productForm.name)}
-              variant="secondary"
-              size="md"
-            >
-              generate product
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -927,7 +1433,7 @@ const DataHuntPage = () => {
         </div>
       </div>
 
-      {/* Create Order Modal */}
+      {/* Modals would go here - keeping this concise for now */}
       <Modal
         isOpen={isCreateOrderOpen}
         onClose={handleCreateOrderModal}

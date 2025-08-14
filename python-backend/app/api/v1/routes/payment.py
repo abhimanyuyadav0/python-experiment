@@ -9,16 +9,10 @@ from app.schemas.payment import (
     PaymentStatus, PaymentMethod, PaymentProvider, Currency
 )
 from app.services.payment_service import PaymentService
-from app.services.payment_service_sqlite import PaymentServiceSQLite
 
-# Use SQLite service for development when MongoDB is not available
-try:
-    PaymentService()
-    print("✅ Using MongoDB PaymentService")
-    PaymentServiceClass = PaymentService
-except Exception as e:
-    print(f"⚠️ MongoDB not available, using SQLite PaymentService: {str(e)}")
-    PaymentServiceClass = PaymentServiceSQLite
+# Use MongoDB PaymentService
+PaymentServiceClass = PaymentService
+print("✅ Using MongoDB PaymentService")
 
 router = APIRouter()
 

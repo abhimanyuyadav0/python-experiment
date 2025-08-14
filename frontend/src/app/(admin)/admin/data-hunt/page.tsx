@@ -470,28 +470,31 @@ const DataHuntPage = () => {
   };
 
   const pickRandomCustomer = async () => {
-    const customersData = customersRes?.customers?.map((customer: Customer) => customer);
+    const customersData = customersRes?.customers?.map(
+      (customer: Customer) => customer
+    );
     const randomIndex = Math.floor(Math.random() * customersData.length);
     return customersData[randomIndex];
   };
   const pickRandomProduct = async () => {
-    const productsData = productsRes?.products?.map((product: Product) => product) || [];
-  
+    const productsData =
+      productsRes?.products?.map((product: Product) => product) || [];
+
     if (productsData.length === 0) return [];
-  
+
     // Decide how many products to pick (1 up to productsData.length)
     const count = Math.floor(Math.random() * productsData.length) + 1;
-  
+
     // Shuffle and pick first `count` items
     const shuffled = [...productsData].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
   };
-  
+
   // Generate dummy data functions
   const generateOrderData = async () => {
     const customer = await pickRandomCustomer();
     const products = await pickRandomProduct();
-    if (products?.length===0) {
+    if (products?.length === 0) {
       toast.error("No products found");
       return;
     }
@@ -531,7 +534,7 @@ const DataHuntPage = () => {
       "AeroCool Air Purifier",
       "PulsePro Smartwatch",
     ];
-  
+
     const descriptions = [
       "Latest smartphone with advanced features, high-resolution camera, and long battery life",
       "High-quality wireless earbuds with noise cancellation and 24-hour battery life",
@@ -542,8 +545,20 @@ const DataHuntPage = () => {
       "Purifies air for a healthy living environment",
       "Smart notifications and health tracking on your wrist",
     ];
-  
-    const categories = ['electronics', 'clothing', 'books', 'home_garden', 'sports', 'beauty', 'automotive', 'toys', 'food_beverage', 'health', 'other'];
+
+    const categories = [
+      "electronics",
+      "clothing",
+      "books",
+      "home_garden",
+      "sports",
+      "beauty",
+      "automotive",
+      "toys",
+      "food_beverage",
+      "health",
+      "other",
+    ];
     const brands = [
       "TechCorp",
       "SoundWave",
@@ -554,7 +569,7 @@ const DataHuntPage = () => {
       "AeroCool",
       "PulsePro",
     ];
-  
+
     const tagsList = [
       ["smartphone", "5G", "camera", "battery"],
       ["earbuds", "wireless", "audio", "music"],
@@ -565,7 +580,7 @@ const DataHuntPage = () => {
       ["air", "purifier", "home", "clean"],
       ["watch", "smart", "health", "notifications"],
     ];
-  
+
     const variantsList = [
       [
         { name: "Color", value: "Midnight Black", price_adjustment: 0 },
@@ -600,7 +615,7 @@ const DataHuntPage = () => {
         { name: "Strap", value: "Metal", price_adjustment: 25 },
       ],
     ];
-  
+
     const specsList = [
       [
         { key: "Screen Size", value: "6.1 inches", unit: "inches" },
@@ -635,9 +650,9 @@ const DataHuntPage = () => {
         { key: "Battery Life", value: "5", unit: "days" },
       ],
     ];
-  
+
     const randomIndex = Math.floor(Math.random() * names.length);
-  
+
     return {
       name: names[randomIndex],
       description: descriptions[randomIndex],
@@ -666,13 +681,12 @@ const DataHuntPage = () => {
       created_by: String(createdById),
     };
   };
-  
+
   const generateProductData = async () => {
     const user = await pickRandomUser();
     const product = generateRandomProduct(user.id);
     setProductForm(product as ProductCreateData);
   };
-  
 
   const pickRandomOrder = async () => {
     const ordersData = ordersRes?.orders?.map((order: Order) => order);
@@ -687,10 +701,11 @@ const DataHuntPage = () => {
       toast.error("No order or customer found");
       return;
     }
+    console.log("order", order);
     const dummyPayment: PaymentCreateData = {
       order_id: order.id,
       customer_id: customer.username,
-      amount: order.total_price,
+      amount: Number(order.total_amount),
       currency: "USD",
       payment_method: {
         method_type: "credit_card",
@@ -844,6 +859,22 @@ const DataHuntPage = () => {
               size="md"
             >
               refetch
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              name="numberOfProductsToGenerate"
+              value={productForm.name}
+              onChange={(e) => handleProductFormChange("name", e.target.value)}
+              placeholder="Product Name"
+            />
+            <Button
+              onClick={() => handleProductFormChange("name", productForm.name)}
+              variant="secondary"
+              size="md"
+            >
+              generate product
             </Button>
           </div>
         </div>

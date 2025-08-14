@@ -58,18 +58,34 @@ def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
 
 def create_user(db: Session, user: UserCreate) -> User:
     """Create a new user"""
-    hashed_password = hash_password(user.password)
-    db_user = User(
-        name=user.name,
-        email=user.email,
-        password=hashed_password,
-        role=user.role,
-        is_active=user.is_active
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    try:
+        print(f"🔐 create_user: Creating user with data: {user}")
+        hashed_password = hash_password(user.password)
+        print(f"🔐 create_user: Password hashed successfully")
+        
+        db_user = User(
+            name=user.name,
+            email=user.email,
+            password=hashed_password,
+            role=user.role,
+            is_active=user.is_active
+        )
+        print(f"🔐 create_user: User object created: {db_user}")
+        
+        db.add(db_user)
+        print(f"🔐 create_user: User added to session")
+        
+        db.commit()
+        print(f"🔐 create_user: Changes committed to database")
+        
+        db.refresh(db_user)
+        print(f"🔐 create_user: User refreshed from database: ID={db_user.id}")
+        
+        return db_user
+    except Exception as e:
+        print(f"🔐 create_user: Error creating user: {str(e)}")
+        db.rollback()
+        raise
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Get user by email"""
@@ -98,23 +114,29 @@ def update_user_role(db: Session, user_id: int, new_role: UserRole) -> Optional[
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """Authenticate user with email and password"""
-    print(f"🔐 authenticate_user: Attempting authentication for email: {email}")
-    user = get_user_by_email(db, email)
-    if not user:
-        print(f"🔐 authenticate_user: User not found for email: {email}")
+    try:
+        print(f"🔐 authenticate_user: Attempting authentication for email: {email}")
+        user = get_user_by_email(db, email)
+        if not user:
+            print(f"🔐 authenticate_user: User not found for email: {email}")
+            return None
+        print(f"🔐 authenticate_user: User found - ID: {user.id}, Email: {user.email}, Active: {user.is_active}")
+        
+        if not verify_password(password, user.password):
+            print(f"🔐 authenticate_user: Password verification failed for user: {email}")
+            return None
+        
+        if user.is_active != 1:
+            print(f"🔐 authenticate_user: User is not active: {email}, is_active: {user.is_active}")
+            return None
+        
+        print(f"🔐 authenticate_user: Authentication successful for user: {email}")
+        return user
+    except Exception as e:
+        print(f"🔐 authenticate_user: Error during authentication: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
-    print(f"🔐 authenticate_user: User found - ID: {user.id}, Email: {user.email}, Active: {user.is_active}")
-    
-    if not verify_password(password, user.password):
-        print(f"🔐 authenticate_user: Password verification failed for user: {email}")
-        return None
-    
-    if user.is_active != 1:
-        print(f"🔐 authenticate_user: User is not active: {email}, is_active: {user.is_active}")
-        return None
-    
-    print(f"🔐 authenticate_user: Authentication successful for user: {email}")
-    return user
 
 def delete_user(db: Session, user_id: int) -> bool:
     """Delete user by ID"""

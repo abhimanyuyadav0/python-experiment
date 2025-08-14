@@ -24,6 +24,7 @@ async def create_order(order_data: OrderCreateSchema):
     - **items**: List of order items with product details
     - **notes**: Additional notes (optional)
     """
+    print("🔄 create_order function called")
     try:
         order_service = OrderService()
         order = await order_service.create_order(order_data)

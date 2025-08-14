@@ -4,7 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import DATABASE_URL
 
 # Create SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
+print(f"🔧 Connecting to database: {DATABASE_URL}")
+engine = create_engine(DATABASE_URL, echo=True)  # Enable SQL logging for debugging
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

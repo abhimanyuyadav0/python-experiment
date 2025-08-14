@@ -21,8 +21,8 @@ class User(Base):
     password = Column(String, nullable=False)
     role = Column(Enum(UserRole), default=UserRole.user, nullable=False)
     is_active = Column(Integer, default=1, nullable=False) # Using Integer for SQLite compatibility (0=False, 1=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
     files = relationship("File", back_populates="user", lazy="dynamic")

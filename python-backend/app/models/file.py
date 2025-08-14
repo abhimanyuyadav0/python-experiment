@@ -24,8 +24,8 @@ class File(Base):
     file_path = Column(String, nullable=False)  # Relative path from uploads directory
     mime_type = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationship
     user = relationship("User", back_populates="files")

@@ -15,7 +15,7 @@ export interface ProductVariant {
 }
 
 export interface ProductSpecification {
-  name: string;
+  key: string;
   value: string;
   unit?: string;
 }
@@ -24,13 +24,11 @@ export interface ProductCreateData {
   name: string;
   description: string;
   sku: string;
-  category: string;
+  category: 'electronics' | 'clothing' | 'books' | 'home_garden' | 'sports' | 'beauty' | 'automotive' | 'toys' | 'food_beverage' | 'health' | 'other';
   brand?: string;
-  price: number;
-  sale_price?: number;
+  base_price: number;
+  compare_price?: number;
   cost_price?: number;
-  stock_quantity: number;
-  min_stock_level?: number;
   weight?: number;
   dimensions?: {
     length?: number;
@@ -42,7 +40,7 @@ export interface ProductCreateData {
   specifications?: ProductSpecification[];
   tags?: string[];
   is_featured?: boolean;
-  is_active?: boolean;
+  is_taxable?: boolean;
   meta_title?: string;
   meta_description?: string;
 }
@@ -50,13 +48,11 @@ export interface ProductCreateData {
 export interface ProductUpdateData {
   name?: string;
   description?: string;
-  category?: string;
+  category?: 'electronics' | 'clothing' | 'books' | 'home_garden' | 'sports' | 'beauty' | 'automotive' | 'toys' | 'food_beverage' | 'health' | 'other';
   brand?: string;
-  price?: number;
-  sale_price?: number;
+  base_price?: number;
+  compare_price?: number;
   cost_price?: number;
-  stock_quantity?: number;
-  min_stock_level?: number;
   weight?: number;
   dimensions?: {
     length?: number;
@@ -68,24 +64,22 @@ export interface ProductUpdateData {
   specifications?: ProductSpecification[];
   tags?: string[];
   is_featured?: boolean;
-  is_active?: boolean;
+  is_taxable?: boolean;
+  status?: 'active' | 'inactive' | 'discontinued' | 'out_of_stock';
   meta_title?: string;
   meta_description?: string;
 }
 
 export interface Product {
-  _id: string;
-  product_id: string;
+  id: string;
   name: string;
   description: string;
   sku: string;
-  category: string;
+  category: 'electronics' | 'clothing' | 'books' | 'home_garden' | 'sports' | 'beauty' | 'automotive' | 'toys' | 'food_beverage' | 'health' | 'other';
   brand?: string;
-  price: number;
-  sale_price?: number;
+  base_price: number;
+  compare_price?: number;
   cost_price?: number;
-  stock_quantity: number;
-  min_stock_level?: number;
   weight?: number;
   dimensions?: {
     length?: number;
@@ -97,7 +91,11 @@ export interface Product {
   specifications?: ProductSpecification[];
   tags?: string[];
   is_featured: boolean;
-  is_active: boolean;
+  is_taxable: boolean;
+  status: 'active' | 'inactive' | 'discontinued' | 'out_of_stock';
+  total_stock: number;
+  average_rating?: number;
+  review_count: number;
   meta_title?: string;
   meta_description?: string;
   created_at: string;

@@ -117,11 +117,10 @@ const DataHuntPage = () => {
     name: "",
     description: "",
     sku: "",
-    category: "",
+    category: "electronics",
     brand: "",
-    price: 0,
-    stock_quantity: 0,
-    is_active: true,
+    base_price: 0,
+    is_taxable: true,
   });
 
   const [paymentForm, setPaymentForm] = useState<PaymentCreateData>({
@@ -309,11 +308,10 @@ const DataHuntPage = () => {
         name: "",
         description: "",
         sku: "",
-        category: "",
+        category: "electronics",
         brand: "",
-        price: 0,
-        stock_quantity: 0,
-        is_active: true,
+        base_price: 0,
+        is_taxable: true,
       });
     } catch (error) {
       console.error("Error creating product:", error);
@@ -417,7 +415,7 @@ const DataHuntPage = () => {
   const [userForm, setUserForm] = useState<UserCreateData>({
     name: "",
     email: "",
-    password: "123456 ",
+    password: "123456",
     role: "user",
   });
   const handleCreateUserModal = () => setIsCreateUserOpen(!isCreateUserOpen);
@@ -509,13 +507,11 @@ const DataHuntPage = () => {
       description:
         "Latest smartphone with advanced features, high-resolution camera, and long battery life",
       sku: `SKU_${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      category: "Electronics",
+      category: "electronics",
       brand: "TechCorp",
-      price: 899.99,
-      sale_price: 799.99,
+      base_price: 899.99,
+      compare_price: 799.99,
       cost_price: 450.0,
-      stock_quantity: 50,
-      min_stock_level: 10,
       weight: 0.18,
       dimensions: {
         length: 15.5,
@@ -543,19 +539,19 @@ const DataHuntPage = () => {
       ],
       specifications: [
         {
-          name: "Screen Size",
+          key: "Screen Size",
           value: "6.1 inches",
           unit: "inches",
         },
         {
-          name: "Battery Capacity",
+          key: "Battery Capacity",
           value: "4000",
           unit: "mAh",
         },
       ],
       tags: ["smartphone", "5G", "camera", "battery"],
       is_featured: true,
-      is_active: true,
+      is_taxable: true,
       meta_title: "Smartphone X Pro - Latest Technology",
       meta_description:
         "Experience the future with Smartphone X Pro featuring cutting-edge technology",
@@ -654,7 +650,7 @@ const DataHuntPage = () => {
       <p className="text-gray-600 mb-6">
         Data Hunt is a platform for finding and analyzing data.
       </p>
-
+      <h3 className="text-xl font-semibold mb-4">Data Hunt Postgres</h3>
       <div className="grid grid-cols-3 gap-6">
         {/* Orders Section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -727,12 +723,15 @@ const DataHuntPage = () => {
             </Button>
           </div>
         </div>
+      </div>
 
+      <h3 className="text-xl font-semibold my-4">Data Hunt MongoDB</h3>
+      <div className="grid grid-cols-3 gap-6">
         {/* Users Section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold mb-4">Users</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Button onClick={() => {}} variant="primary" size="md">
+            <Button onClick={handleCreateUserModal} variant="primary" size="md">
               Create User
             </Button>
             <Button onClick={handleUsersModal} variant="secondary" size="md">
@@ -1052,9 +1051,12 @@ const DataHuntPage = () => {
               </label>
               <input
                 type="number"
-                value={productForm.price}
+                value={productForm.base_price}
                 onChange={(e) =>
-                  handleProductFormChange("price", parseFloat(e.target.value))
+                  handleProductFormChange(
+                    "base_price",
+                    parseFloat(e.target.value)
+                  )
                 }
                 className="w-full p-2 border border-gray-300 rounded-md"
                 placeholder="Enter price"
@@ -1064,35 +1066,18 @@ const DataHuntPage = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Stock Quantity
-              </label>
-              <input
-                type="number"
-                value={productForm.stock_quantity}
-                onChange={(e) =>
-                  handleProductFormChange(
-                    "stock_quantity",
-                    parseInt(e.target.value)
-                  )
-                }
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Enter stock quantity"
-              />
-            </div>
             <div className="flex items-center">
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={productForm.is_active}
+                  checked={productForm.is_taxable}
                   onChange={(e) =>
-                    handleProductFormChange("is_active", e.target.checked)
+                    handleProductFormChange("is_taxable", e.target.checked)
                   }
                   className="mr-2"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Active
+                  Taxable
                 </span>
               </label>
             </div>
@@ -1346,93 +1331,96 @@ const DataHuntPage = () => {
               </div>
             </div>
 
-                       <div className="grid grid-cols-2 gap-4">
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">
-                 Description
-               </label>
-               <textarea
-                 value={paymentForm.description || ""}
-                 onChange={(e) =>
-                   handlePaymentFormChange("description", e.target.value)
-                 }
-                 className="w-full p-2 border border-gray-300 rounded-md"
-                 placeholder="Payment description"
-                 rows={3}
-               />
-             </div>
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">
-                 Statement Descriptor
-               </label>
-               <input
-                 type="text"
-                 value={paymentForm.statement_descriptor || ""}
-                 onChange={(e) =>
-                   handlePaymentFormChange("statement_descriptor", e.target.value)
-                 }
-                 className="w-full p-2 border border-gray-300 rounded-md"
-                 placeholder="Statement descriptor"
-                 maxLength={22}
-               />
-             </div>
-           </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={paymentForm.description || ""}
+                  onChange={(e) =>
+                    handlePaymentFormChange("description", e.target.value)
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Payment description"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Statement Descriptor
+                </label>
+                <input
+                  type="text"
+                  value={paymentForm.statement_descriptor || ""}
+                  onChange={(e) =>
+                    handlePaymentFormChange(
+                      "statement_descriptor",
+                      e.target.value
+                    )
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Statement descriptor"
+                  maxLength={22}
+                />
+              </div>
+            </div>
 
-           <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">
-               Metadata (JSON)
-             </label>
-             <textarea
-               value={JSON.stringify(paymentForm.metadata || {}, null, 2)}
-               onChange={(e) => {
-                 try {
-                   const metadata = JSON.parse(e.target.value);
-                   handlePaymentFormChange("metadata", metadata);
-                 } catch (error) {
-                   // Ignore invalid JSON
-                 }
-               }}
-               className="w-full p-2 border border-gray-300 rounded-md"
-               placeholder='{"source": "web", "campaign": "summer_sale_2024"}'
-               rows={3}
-             />
-           </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Metadata (JSON)
+              </label>
+              <textarea
+                value={JSON.stringify(paymentForm.metadata || {}, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const metadata = JSON.parse(e.target.value);
+                    handlePaymentFormChange("metadata", metadata);
+                  } catch (error) {
+                    // Ignore invalid JSON
+                  }
+                }}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder='{"source": "web", "campaign": "summer_sale_2024"}'
+                rows={3}
+              />
+            </div>
 
-           <div className="grid grid-cols-2 gap-4">
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">
-                 Receipt Email
-               </label>
-               <input
-                 type="email"
-                 value={paymentForm.receipt_email || ""}
-                 onChange={(e) =>
-                   handlePaymentFormChange("receipt_email", e.target.value)
-                 }
-                 className="w-full p-2 border border-gray-300 rounded-md"
-                 placeholder="Email for receipt"
-               />
-             </div>
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">
-                 Application Fee Amount
-               </label>
-               <input
-                 type="number"
-                 value={paymentForm.application_fee_amount || 0}
-                 onChange={(e) =>
-                   handlePaymentFormChange(
-                     "application_fee_amount",
-                     parseFloat(e.target.value)
-                   )
-                 }
-                 className="w-full p-2 border border-gray-300 rounded-md"
-                 placeholder="Fee amount"
-                 step="0.01"
-                 min="0"
-               />
-             </div>
-           </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Receipt Email
+                </label>
+                <input
+                  type="email"
+                  value={paymentForm.receipt_email || ""}
+                  onChange={(e) =>
+                    handlePaymentFormChange("receipt_email", e.target.value)
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Email for receipt"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Application Fee Amount
+                </label>
+                <input
+                  type="number"
+                  value={paymentForm.application_fee_amount || 0}
+                  onChange={(e) =>
+                    handlePaymentFormChange(
+                      "application_fee_amount",
+                      parseFloat(e.target.value)
+                    )
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Fee amount"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
 
             <Button
               onClick={handleCreatePaymentModal}
@@ -1931,17 +1919,17 @@ const DataHuntPage = () => {
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {productsRes?.products?.map((product: Product) => (
-                <div key={product._id} className="border p-4 rounded-lg">
+                <div key={product.id} className="border p-4 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-semibold">{product.name}</h4>
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
-                        product.is_active
+                        product.status === "active"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {product.is_active ? "Active" : "Inactive"}
+                      {product.status}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
@@ -1949,11 +1937,10 @@ const DataHuntPage = () => {
                   </p>
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                    <p className="text-sm font-medium">${product.price}</p>
+                    <p className="text-sm font-medium">${product.base_price}</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Stock: {product.stock_quantity} | Category:{" "}
-                    {product.category}
+                    Stock: {product.total_stock} | Category: {product.category}
                   </p>
                 </div>
               ))}
@@ -2136,7 +2123,10 @@ const DataHuntPage = () => {
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {usersRes?.map((user: any) => (
-                <div key={user.id} className="border border-gray-300 p-4 rounded-lg">
+                <div
+                  key={user.id}
+                  className="border border-gray-300 p-4 rounded-lg"
+                >
                   <h4 className="font-semibold">{user.name}</h4>
                   <p className="text-sm text-gray-600">{user.email}</p>
                 </div>

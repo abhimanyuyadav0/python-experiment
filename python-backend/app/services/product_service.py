@@ -11,9 +11,14 @@ import re
 
 class ProductService:
     def __init__(self):
-        self.db = get_mongodb()
-        self.collection = self.db.products
-        self.categories_collection = self.db.product_categories
+        try:
+            self.db = get_mongodb()
+            self.collection = self.db.products
+            self.categories_collection = self.db.product_categories
+            print("✅ ProductService: MongoDB connection successful")
+        except Exception as e:
+            print(f"❌ ProductService: MongoDB connection failed: {str(e)}")
+            raise RuntimeError(f"MongoDB connection failed: {str(e)}")
 
     async def create_product(self, product_data: ProductCreateSchema) -> ProductResponseSchema:
         """Create a new product"""

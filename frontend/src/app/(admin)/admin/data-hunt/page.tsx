@@ -475,16 +475,23 @@ const DataHuntPage = () => {
     return customersData[randomIndex];
   };
   const pickRandomProduct = async () => {
-    const productsData = productsRes;
-    console.log("productsData", productsData);
-    const randomIndex = Math.floor(Math.random() * productsData.length);
-    return productsData[randomIndex];
+    const productsData = productsRes?.products?.map((product: Product) => product) || [];
+  
+    if (productsData.length === 0) return [];
+  
+    // Decide how many products to pick (1 up to productsData.length)
+    const count = Math.floor(Math.random() * productsData.length) + 1;
+  
+    // Shuffle and pick first `count` items
+    const shuffled = [...productsData].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
   };
+  
   // Generate dummy data functions
   const generateOrderData = async () => {
     const customer = await pickRandomCustomer();
     const products = await pickRandomProduct();
-    if (!products) {
+    if (products?.length===0) {
       toast.error("No products found");
       return;
     }
@@ -676,6 +683,10 @@ const DataHuntPage = () => {
   const generatePaymentData = async () => {
     const order = await pickRandomOrder();
     const customer = await pickRandomCustomer();
+    if (!order || !customer) {
+      toast.error("No order or customer found");
+      return;
+    }
     const dummyPayment: PaymentCreateData = {
       order_id: order.id,
       customer_id: customer.username,

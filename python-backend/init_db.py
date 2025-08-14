@@ -9,6 +9,8 @@ from sqlalchemy import create_engine, text
 from app.core.database import SessionLocal, Base, engine
 from app.models.user import User, UserRole
 from app.models.file import File
+from app.models.customer import Customer
+from app.models.payment import Payment, PaymentMethod, PaymentIntent, Refund, WebhookEvent
 from app.services.user_service import hash_password
 
 def init_database():
@@ -78,6 +80,12 @@ def init_database():
         print("  Admin:    admin@example.com / admin123")
         print("  Tenant:   tenant@example.com / tenant123")
         print("  User:     user@example.com / user123")
+        print("\nPayment tables created:")
+        print("  - payments")
+        print("  - payment_methods")
+        print("  - payment_intents")
+        print("  - refunds")
+        print("  - webhook_events")
         
     except Exception as e:
         print(f"❌ Error during database initialization: {e}")

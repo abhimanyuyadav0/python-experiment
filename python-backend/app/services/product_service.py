@@ -55,9 +55,11 @@ class ProductService:
                 "total_stock": total_stock,
                 "average_rating": None,
                 "review_count": 0,
+                "created_by": product_data.created_by,
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
+            print("product_doc", product_doc)
 
             # Insert product into database
             result = await self.collection.insert_one(product_doc)

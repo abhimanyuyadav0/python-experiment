@@ -8,16 +8,19 @@ from app.schemas.product import (
 from app.services.product_service import ProductService
 from app.services.product_service_sqlite import ProductServiceSQLite
 
-# Use SQLite service for development when MongoDB is not available
-try:
-    ProductService()
-    print("✅ Using MongoDB ProductService")
-    ProductServiceClass = ProductService
-except Exception as e:
-    print(f"⚠️ MongoDB not available, using SQLite ProductService: {str(e)}")
-    ProductServiceClass = ProductServiceSQLite
-
 router = APIRouter()
+
+def get_product_service():
+    """Dynamically get the appropriate product service based on MongoDB availability"""
+    try:
+        from app.core.mongodb import get_mongodb
+        # Try to get MongoDB connection
+        get_mongodb()
+        print("✅ Using MongoDB ProductService")
+        return ProductService()
+    except Exception as e:
+        print(f"⚠️ MongoDB not available, using SQLite ProductService: {str(e)}")
+        return ProductServiceSQLite()
 
 @router.post("/", response_model=ProductResponseSchema, summary="Create a new product")
 async def create_product(product_data: ProductCreateSchema):
@@ -33,7 +36,8 @@ async def create_product(product_data: ProductCreateSchema):
     - **Settings**: Featured status, tax settings
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
+        print("product_data", product_data)
         product = await product_service.create_product(product_data)
         return product
     except Exception as e:
@@ -46,7 +50,7 @@ async def get_product(product_id: str):
     
     - **product_id**: The unique identifier of the product
     """
-    product_service = ProductServiceClass()
+    product_service = get_product_service()
     product = await product_service.get_product_by_id(product_id)
     
     if not product:
@@ -61,7 +65,7 @@ async def get_product_by_sku(sku: str):
     
     - **sku**: The SKU of the product
     """
-    product_service = ProductServiceClass()
+    product_service = get_product_service()
     product = await product_service.get_product_by_sku(sku)
     
     if not product:
@@ -87,7 +91,7 @@ async def get_products(
     - **is_featured**: Filter featured products
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         result = await product_service.get_products(skip, limit, category, status, is_featured)
         return result
     except Exception as e:
@@ -115,7 +119,7 @@ async def search_products(
     - **sort_order**: Sort direction (asc/desc)
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         result = await product_service.search_products(search_params, skip, limit)
         return result
     except Exception as e:
@@ -130,7 +134,7 @@ async def update_product(product_id: str, update_data: ProductUpdateSchema):
     - **update_data**: The new product data to apply
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         updated_product = await product_service.update_product(product_id, update_data)
         
         if not updated_product:
@@ -150,7 +154,7 @@ async def delete_product(product_id: str):
     - **product_id**: The unique identifier of the product to delete
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         success = await product_service.delete_product(product_id)
         
         if not success:
@@ -171,7 +175,7 @@ async def bulk_update_products(bulk_update: ProductBulkUpdateSchema):
     - **updates**: The changes to apply to all products
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         result = await product_service.bulk_update_products(bulk_update)
         return result
     except Exception as e:
@@ -188,7 +192,7 @@ async def update_inventory(inventory_update: ProductInventoryUpdateSchema):
     - **notes**: Optional notes about the inventory change
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         result = await product_service.update_inventory(inventory_update)
         return result
     except Exception as e:
@@ -204,7 +208,7 @@ async def get_featured_products(
     - **limit**: Maximum number of featured products to return
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         products = await product_service.get_featured_products(limit)
         return products
     except Exception as e:
@@ -222,7 +226,7 @@ async def get_products_by_category(
     - **limit**: Maximum number of products to return
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         products = await product_service.get_products_by_category(category, limit)
         return products
     except Exception as e:
@@ -240,7 +244,7 @@ async def get_product_statistics():
     - Category distribution
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         stats = await product_service.get_product_statistics()
         return stats
     except Exception as e:
@@ -263,7 +267,7 @@ async def get_available_brands():
     Retrieve list of all available product brands.
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         # Get unique brands from products collection
         pipeline = [
             {"$match": {"brand": {"$exists": True, "$ne": None}}},
@@ -285,7 +289,7 @@ async def get_available_tags():
     Retrieve list of all available product tags.
     """
     try:
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         # Get unique tags from products collection
         pipeline = [
             {"$unwind": "$tags"},
@@ -311,7 +315,7 @@ async def update_product_status(product_id: str, status: ProductStatus):
     """
     try:
         update_data = ProductUpdateSchema(status=status)
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         updated_product = await product_service.update_product(product_id, update_data)
         
         if not updated_product:
@@ -333,7 +337,7 @@ async def toggle_product_featured(product_id: str, is_featured: bool):
     """
     try:
         update_data = ProductUpdateSchema(is_featured=is_featured)
-        product_service = ProductServiceClass()
+        product_service = get_product_service()
         updated_product = await product_service.update_product(product_id, update_data)
         
         if not updated_product:

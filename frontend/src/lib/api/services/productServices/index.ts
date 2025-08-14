@@ -43,6 +43,7 @@ export interface ProductCreateData {
   is_taxable?: boolean;
   meta_title?: string;
   meta_description?: string;
+  createdBy?: string;
 }
 
 export interface ProductUpdateData {

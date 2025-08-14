@@ -1,5 +1,12 @@
 import axoisInstance from "../../axois";
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  is_active: boolean;
+  role: 'admin' | 'tenant' | 'user';
+}
 export const getUser = (id: string) => axoisInstance.get(`/api/v1/users/${id}`);
 export const loginUser = (data: { email: string; password: string }) => {
   return axoisInstance.post(`/api/v1/users/authenticate`, data);

@@ -29,7 +29,7 @@ import {
 } from "@/lib/api/services/customerServices";
 import { toast } from "react-toastify";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getAllUsers, signupUser } from "@/lib/api/services/userServices";
+import { getAllUsers, signupUser, User } from "@/lib/api/services/userServices";
 interface UserCreateData {
   name: string;
   email: string;
@@ -469,95 +469,202 @@ const DataHuntPage = () => {
     }));
   };
 
+  const pickRandomCustomer = async () => {
+    const customersData = customersRes?.customers?.map((customer: Customer) => customer);
+    const randomIndex = Math.floor(Math.random() * customersData.length);
+    return customersData[randomIndex];
+  };
+  const pickRandomProduct = async () => {
+    const productsData = productsRes;
+    console.log("productsData", productsData);
+    const randomIndex = Math.floor(Math.random() * productsData.length);
+    return productsData[randomIndex];
+  };
   // Generate dummy data functions
-  const generateOrderData = () => {
+  const generateOrderData = async () => {
+    const customer = await pickRandomCustomer();
+    const products = await pickRandomProduct();
+    if (!products) {
+      toast.error("No products found");
+      return;
+    }
+    console.log("products", products);
     const dummyOrder: OrderCreateData = {
-      customer_id: `CUST_${Math.random()
-        .toString(36)
-        .substr(2, 8)
-        .toUpperCase()}`,
-      customer_name: "John Doe",
-      customer_email: "john.doe@example.com",
-      customer_phone: "+1-555-0123",
-      items: [
-        {
-          product_id: "PROD_001",
-          product_name: "Laptop Computer",
-          quantity: 1,
-          unit_price: 1299.99,
-          total_price: 1299.99,
-        },
-        {
-          product_id: "PROD_002",
-          product_name: "Wireless Mouse",
-          quantity: 2,
-          unit_price: 29.99,
-          total_price: 59.98,
-        },
-      ],
+      customer_id: customer.username,
+      customer_name: customer.first_name + " " + customer.last_name,
+      customer_email: customer.email,
+      customer_phone: customer.phone,
+      items: products.map((product: Product) => ({
+        product_id: product.id,
+        product_name: product.name,
+        quantity: Math.floor(Math.random() * 10) + 1,
+        unit_price: product.base_price,
+        total_price: product.base_price,
+      })),
       shipping_address: "123 Main Street, New York, NY 10001, USA",
       notes: "Please deliver during business hours",
     };
     setOrderForm(dummyOrder);
   };
 
-  const generateProductData = () => {
-    const dummyProduct: ProductCreateData = {
-      name: "Smartphone X Pro",
-      description:
-        "Latest smartphone with advanced features, high-resolution camera, and long battery life",
+  const pickRandomUser = async () => {
+    const usersData = usersRes?.map((user: User) => user);
+    const randomIndex = Math.floor(Math.random() * usersData.length);
+    return usersData[randomIndex];
+  };
+  const generateRandomProduct = (createdById: string) => {
+    const names = [
+      "Smartphone X Pro",
+      "UltraSound Wireless Earbuds",
+      "SmartFit Fitness Band",
+      "VisionPlus 4K TV",
+      "EcoBrew Coffee Maker",
+      "HyperDrive Gaming Laptop",
+      "AeroCool Air Purifier",
+      "PulsePro Smartwatch",
+    ];
+  
+    const descriptions = [
+      "Latest smartphone with advanced features, high-resolution camera, and long battery life",
+      "High-quality wireless earbuds with noise cancellation and 24-hour battery life",
+      "Track your fitness journey with heart rate monitoring and step counting",
+      "Crystal clear 4K display with HDR support and smart features",
+      "Brew fresh coffee with eco-friendly features",
+      "High-speed gaming with powerful graphics",
+      "Purifies air for a healthy living environment",
+      "Smart notifications and health tracking on your wrist",
+    ];
+  
+    const categories = ["electronics", "home-appliances", "fitness", "gaming"];
+    const brands = [
+      "TechCorp",
+      "SoundWave",
+      "FitTrack",
+      "VisionPlus",
+      "EcoBrew",
+      "HyperDrive",
+      "AeroCool",
+      "PulsePro",
+    ];
+  
+    const tagsList = [
+      ["smartphone", "5G", "camera", "battery"],
+      ["earbuds", "wireless", "audio", "music"],
+      ["fitness", "band", "tracker", "health"],
+      ["tv", "4k", "hdr", "entertainment"],
+      ["coffee", "kitchen", "eco", "brew"],
+      ["laptop", "gaming", "performance", "speed"],
+      ["air", "purifier", "home", "clean"],
+      ["watch", "smart", "health", "notifications"],
+    ];
+  
+    const variantsList = [
+      [
+        { name: "Color", value: "Midnight Black", price_adjustment: 0 },
+        { name: "Storage", value: "128GB", price_adjustment: 0 },
+      ],
+      [
+        { name: "Color", value: "White", price_adjustment: 0 },
+        { name: "Case", value: "Leather", price_adjustment: 15 },
+      ],
+      [
+        { name: "Color", value: "Blue", price_adjustment: 0 },
+        { name: "Band Type", value: "Silicone", price_adjustment: 0 },
+      ],
+      [
+        { name: "Size", value: "55-inch", price_adjustment: 0 },
+        { name: "Panel", value: "OLED", price_adjustment: 100 },
+      ],
+      [
+        { name: "Color", value: "Black", price_adjustment: 0 },
+        { name: "Capacity", value: "1L", price_adjustment: 0 },
+      ],
+      [
+        { name: "RAM", value: "16GB", price_adjustment: 50 },
+        { name: "Storage", value: "512GB SSD", price_adjustment: 100 },
+      ],
+      [
+        { name: "Coverage Area", value: "500 sq ft", price_adjustment: 0 },
+        { name: "Filter Type", value: "HEPA", price_adjustment: 20 },
+      ],
+      [
+        { name: "Color", value: "Black", price_adjustment: 0 },
+        { name: "Strap", value: "Metal", price_adjustment: 25 },
+      ],
+    ];
+  
+    const specsList = [
+      [
+        { key: "Screen Size", value: "6.1 inches", unit: "inches" },
+        { key: "Battery Capacity", value: "4000", unit: "mAh" },
+      ],
+      [
+        { key: "Battery Life", value: "24", unit: "hours" },
+        { key: "Bluetooth Version", value: "5.2", unit: "" },
+      ],
+      [
+        { key: "Battery Life", value: "7", unit: "days" },
+        { key: "Water Resistance", value: "IP68", unit: "" },
+      ],
+      [
+        { key: "Resolution", value: "3840 x 2160", unit: "pixels" },
+        { key: "Refresh Rate", value: "120", unit: "Hz" },
+      ],
+      [
+        { key: "Capacity", value: "1L", unit: "liters" },
+        { key: "Power", value: "1200", unit: "watts" },
+      ],
+      [
+        { key: "Processor", value: "Intel i7", unit: "" },
+        { key: "Graphics", value: "RTX 3060", unit: "" },
+      ],
+      [
+        { key: "Coverage Area", value: "500", unit: "sq ft" },
+        { key: "Filter Type", value: "HEPA", unit: "" },
+      ],
+      [
+        { key: "Display", value: "1.5 inches", unit: "inches" },
+        { key: "Battery Life", value: "5", unit: "days" },
+      ],
+    ];
+  
+    const randomIndex = Math.floor(Math.random() * names.length);
+  
+    return {
+      name: names[randomIndex],
+      description: descriptions[randomIndex],
       sku: `SKU_${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      category: "electronics",
-      brand: "TechCorp",
+      category: categories[Math.floor(Math.random() * categories.length)],
+      brand: brands[randomIndex],
       base_price: 899.99,
       compare_price: 799.99,
       cost_price: 450.0,
       weight: 0.18,
-      dimensions: {
-        length: 15.5,
-        width: 7.5,
-        height: 0.8,
-      },
+      dimensions: { length: 15.5, width: 7.5, height: 0.8 },
       images: [
         {
-          url: "https://example.com/images/smartphone-x-pro-1.jpg",
-          alt_text: "Smartphone X Pro Front View",
+          url: `https://example.com/images/product-${randomIndex + 1}.jpg`,
+          alt_text: `${names[randomIndex]} Front View`,
           is_primary: true,
         },
       ],
-      variants: [
-        {
-          name: "Color",
-          value: "Midnight Black",
-          price_adjustment: 0,
-        },
-        {
-          name: "Storage",
-          value: "128GB",
-          price_adjustment: 0,
-        },
-      ],
-      specifications: [
-        {
-          key: "Screen Size",
-          value: "6.1 inches",
-          unit: "inches",
-        },
-        {
-          key: "Battery Capacity",
-          value: "4000",
-          unit: "mAh",
-        },
-      ],
-      tags: ["smartphone", "5G", "camera", "battery"],
+      variants: variantsList[randomIndex],
+      specifications: specsList[randomIndex],
+      tags: tagsList[randomIndex],
       is_featured: true,
       is_taxable: true,
-      meta_title: "Smartphone X Pro - Latest Technology",
-      meta_description:
-        "Experience the future with Smartphone X Pro featuring cutting-edge technology",
+      meta_title: `${names[randomIndex]} - Latest Technology`,
+      meta_description: descriptions[randomIndex],
+      created_by: createdById,
     };
-    setProductForm(dummyProduct);
   };
+  
+  const generateProductData = async () => {
+    const user = await pickRandomUser();
+    const product = generateRandomProduct(user.id);
+    setProductForm(product as ProductCreateData);
+  };
+  
 
   const generatePaymentData = () => {
     const dummyPayment: PaymentCreateData = {

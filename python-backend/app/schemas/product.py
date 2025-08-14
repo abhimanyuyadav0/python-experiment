@@ -103,6 +103,7 @@ class ProductResponseSchema(BaseModel):
     total_stock: int = Field(..., description="Total stock across all variants")
     average_rating: Optional[float] = Field(None, ge=0, le=5, description="Average product rating")
     review_count: int = Field(0, description="Number of reviews")
+    created_by: str = Field(..., description="Product creator")
     created_at: datetime = Field(..., description="Product creation timestamp")
     updated_at: datetime = Field(..., description="Product last update timestamp")
 

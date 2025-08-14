@@ -43,6 +43,30 @@ async def create_product(product_data: ProductCreateSchema):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create product: {str(e)}")
 
+@router.get("/", response_model=ProductListResponseSchema, summary="Get all products")
+async def get_products(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Number of records to return"),
+    category: Optional[ProductCategory] = Query(None, description="Filter by product category"),
+    status: Optional[ProductStatus] = Query(None, description="Filter by product status"),
+    is_featured: Optional[bool] = Query(None, description="Filter featured products")
+):
+    """
+    Retrieve a paginated list of products with optional filtering.
+    
+    - **skip**: Number of records to skip for pagination
+    - **limit**: Maximum number of records to return (max 100)
+    - **category**: Filter products by category
+    - **status**: Filter products by status
+    - **is_featured**: Filter featured products
+    """
+    try:
+        product_service = get_product_service()
+        result = await product_service.get_products(skip, limit, category, status, is_featured)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve products: {str(e)}")
+
 @router.get("/{product_id}", response_model=ProductResponseSchema, summary="Get product by ID")
 async def get_product(product_id: str):
     """
@@ -72,30 +96,6 @@ async def get_product_by_sku(sku: str):
         raise HTTPException(status_code=404, detail="Product not found")
     
     return product
-
-@router.get("/", response_model=ProductListResponseSchema, summary="Get all products")
-async def get_products(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Number of records to return"),
-    category: Optional[ProductCategory] = Query(None, description="Filter by product category"),
-    status: Optional[ProductStatus] = Query(None, description="Filter by product status"),
-    is_featured: Optional[bool] = Query(None, description="Filter featured products")
-):
-    """
-    Retrieve a paginated list of products with optional filtering.
-    
-    - **skip**: Number of records to skip for pagination
-    - **limit**: Maximum number of records to return (max 100)
-    - **category**: Filter products by category
-    - **status**: Filter products by status
-    - **is_featured**: Filter featured products
-    """
-    try:
-        product_service = get_product_service()
-        result = await product_service.get_products(skip, limit, category, status, is_featured)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve products: {str(e)}")
 
 @router.post("/search", response_model=ProductListResponseSchema, summary="Search products")
 async def search_products(

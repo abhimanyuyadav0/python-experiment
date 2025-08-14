@@ -58,7 +58,7 @@ class ProductCreateSchema(BaseModel):
     meta_description: Optional[str] = Field(None, max_length=160, description="SEO meta description")
     is_featured: bool = Field(False, description="Whether product is featured")
     is_taxable: bool = Field(True, description="Whether product is taxable")
-
+    created_by: str = Field(..., description="Product creator")
 class ProductUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, min_length=10, max_length=2000)
@@ -78,7 +78,7 @@ class ProductUpdateSchema(BaseModel):
     is_featured: Optional[bool] = None
     is_taxable: Optional[bool] = None
     status: Optional[ProductStatus] = None
-
+    created_by: Optional[str] = None
 class ProductResponseSchema(BaseModel):
     id: str = Field(..., description="Product ID")
     name: str = Field(..., description="Product name")

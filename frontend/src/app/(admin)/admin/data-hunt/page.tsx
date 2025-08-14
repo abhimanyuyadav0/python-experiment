@@ -536,7 +536,7 @@ const DataHuntPage = () => {
       "Smart notifications and health tracking on your wrist",
     ];
   
-    const categories = ["electronics", "home-appliances", "fitness", "gaming"];
+    const categories = ['electronics', 'clothing', 'books', 'home_garden', 'sports', 'beauty', 'automotive', 'toys', 'food_beverage', 'health', 'other'];
     const brands = [
       "TechCorp",
       "SoundWave",
@@ -656,7 +656,7 @@ const DataHuntPage = () => {
       is_taxable: true,
       meta_title: `${names[randomIndex]} - Latest Technology`,
       meta_description: descriptions[randomIndex],
-      created_by: createdById,
+      created_by: String(createdById),
     };
   };
   

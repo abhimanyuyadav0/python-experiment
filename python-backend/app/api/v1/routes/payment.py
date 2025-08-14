@@ -45,6 +45,40 @@ async def create_payment(payment_data: PaymentCreateSchema):
         print(f"❌ Payment creation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create payment: {str(e)}")
 
+@router.get("/", response_model=PaymentListResponseSchema, summary="Get all payments")
+async def get_payments(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Number of records to return"),
+    status: Optional[PaymentStatus] = Query(None, description="Filter by payment status"),
+    payment_method: Optional[PaymentMethod] = Query(None, description="Filter by payment method"),
+    provider: Optional[PaymentProvider] = Query(None, description="Filter by payment provider"),
+    currency: Optional[Currency] = Query(None, description="Filter by currency")
+):
+    """
+    Retrieve a paginated list of payments with optional filtering.
+    
+    - **skip**: Number of records to skip for pagination
+    - **limit**: Maximum number of records to return (max 100)
+    - **status**: Filter payments by status
+    - **payment_method**: Filter by payment method type
+    - **provider**: Filter by payment provider
+    - **currency**: Filter by currency
+    """
+    try:
+        # Build search parameters
+        search_params = PaymentSearchSchema(
+            status=status,
+            payment_method=payment_method,
+            provider=provider,
+            currency=currency
+        )
+        
+        payment_service = PaymentServiceClass()
+        result = await payment_service.search_payments(search_params, skip, limit)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve payments: {str(e)}")
+
 @router.get("/{payment_id}", response_model=PaymentResponseSchema, summary="Get payment by ID")
 async def get_payment(payment_id: str):
     """
@@ -90,40 +124,6 @@ async def get_payments_by_customer(
     try:
         payment_service = PaymentServiceClass()
         result = await payment_service.get_payments_by_customer_id(customer_id, skip, limit)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve payments: {str(e)}")
-
-@router.get("/", response_model=PaymentListResponseSchema, summary="Get all payments")
-async def get_payments(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Number of records to return"),
-    status: Optional[PaymentStatus] = Query(None, description="Filter by payment status"),
-    payment_method: Optional[PaymentMethod] = Query(None, description="Filter by payment method"),
-    provider: Optional[PaymentProvider] = Query(None, description="Filter by payment provider"),
-    currency: Optional[Currency] = Query(None, description="Filter by currency")
-):
-    """
-    Retrieve a paginated list of payments with optional filtering.
-    
-    - **skip**: Number of records to skip for pagination
-    - **limit**: Maximum number of records to return (max 100)
-    - **status**: Filter payments by status
-    - **payment_method**: Filter by payment method type
-    - **provider**: Filter by payment provider
-    - **currency**: Filter by currency
-    """
-    try:
-        # Build search parameters
-        search_params = PaymentSearchSchema(
-            status=status,
-            payment_method=payment_method,
-            provider=provider,
-            currency=currency
-        )
-        
-        payment_service = PaymentServiceClass()
-        result = await payment_service.search_payments(search_params, skip, limit)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve payments: {str(e)}")

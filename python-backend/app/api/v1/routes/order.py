@@ -41,6 +41,29 @@ async def create_order(order_data: OrderCreateSchema):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to create order: {str(e)}")
 
+@router.get("/", response_model=OrderListResponseSchema, summary="Get all orders")
+async def get_orders(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(10, ge=1, le=100, description="Number of records to return"),
+    customer_id: Optional[str] = Query(None, description="Filter by customer ID"),
+    status: Optional[OrderStatus] = Query(None, description="Filter by order status")
+):
+    """
+    Retrieve a paginated list of orders with optional filtering.
+    
+    - **skip**: Number of records to skip for pagination
+    - **limit**: Maximum number of records to return
+    - **customer_id**: Filter orders by customer ID
+    - **status**: Filter orders by status
+    """
+    print("🔄 get_orders function called")
+    try:
+        order_service = OrderService()
+        result = await order_service.get_orders(skip, limit, customer_id, status)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve orders: {str(e)}")
+
 @router.get("/{order_id}", response_model=OrderResponseSchema, summary="Get order by ID")
 async def get_order(order_id: str):
     """
@@ -55,8 +78,6 @@ async def get_order(order_id: str):
         raise HTTPException(status_code=404, detail="Order not found")
     
     return order
-
-@router.get("/", response_model=OrderListResponseSchema, summary="Get all orders")
 async def get_orders(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, ge=1, le=100, description="Number of records to return"),

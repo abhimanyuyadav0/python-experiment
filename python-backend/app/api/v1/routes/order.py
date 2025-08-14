@@ -10,7 +10,7 @@ from app.schemas.order import (
 from app.services.order_service import OrderService
 
 router = APIRouter()
-
+print("🔄 Order router initialized")
 @router.post("/", response_model=OrderResponseSchema, summary="Create a new order")
 async def create_order(order_data: OrderCreateSchema):
     """
@@ -61,6 +61,7 @@ async def get_orders(
     - **customer_id**: Filter orders by customer ID
     - **status**: Filter orders by status
     """
+    print("🔄 get_orders function called")
     try:
         order_service = OrderService()
         result = await order_service.get_orders(skip, limit, customer_id, status)

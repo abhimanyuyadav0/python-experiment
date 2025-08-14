@@ -19,3 +19,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Alternative function for non-dependency injection usage
+def get_db_session():
+    return SessionLocal()

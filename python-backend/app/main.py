@@ -79,8 +79,8 @@ async def mongodb_health_check():
     try:
         from app.core.mongodb import get_mongodb, mongodb
         
-        # Check if MongoDB is connected
-        if not mongodb.client or not mongodb.db:
+        # Check if MongoDB is connected - compare with None instead of boolean evaluation
+        if mongodb.client is None or mongodb.db is None:
             return {
                 "status": "MongoDB not connected", 
                 "error": "MongoDB connection was not established during startup"

@@ -58,6 +58,6 @@ async def close_mongo_connection():
 
 def get_mongodb():
     """Get MongoDB database instance."""
-    if not mongodb.db:
+    if mongodb.db is None:
         raise RuntimeError("MongoDB not connected. Call connect_to_mongo() first.")
     return mongodb.db

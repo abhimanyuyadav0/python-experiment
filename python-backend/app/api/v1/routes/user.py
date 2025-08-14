@@ -14,27 +14,36 @@ router = APIRouter()
 @router.post("/authenticate", response_model=TokenData)
 def authenticate_user_endpoint(user_credentials: UserLogin, db: Session = Depends(get_db)):
     """Authenticate user and return token"""
-    print(f"🔐 authenticate_user_endpoint: Login attempt for email: {user_credentials.email}")
-    user = authenticate_user(db, user_credentials.email, user_credentials.password)
-    if not user:
-        print(f"🔐 authenticate_user_endpoint: Authentication failed for email: {user_credentials.email}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+    try:
+        print(f"🔐 authenticate_user_endpoint: Login attempt for email: {user_credentials.email}")
+        user = authenticate_user(db, user_credentials.email, user_credentials.password)
+        if not user:
+            print(f"🔐 authenticate_user_endpoint: Authentication failed for email: {user_credentials.email}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password"
+            )
+        
+        # Create access token
+        token_data = {
+            "sub": user.id,  # String UUID directly
+            "email": user.email,
+            "name": user.name
+        }
+        token, expires_at = create_access_token(data=token_data)
+        print(f"🔐 authenticate_user_endpoint: Token created for user {user.email}, token: {token}")
+        return TokenData(
+            user=user,
+            token=token,
         )
-    
-    # Create access token
-    token_data = {
-        "sub": user.id,  # String UUID directly
-        "email": user.email,
-        "name": user.name
-    }
-    token, expires_at = create_access_token(data=token_data)
-    print(f"🔐 authenticate_user_endpoint: Token created for user {user.email}, token: {token}")
-    return TokenData(
-        user=user,
-        token=token,
-    )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"🔐 authenticate_user_endpoint: Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication failed: {str(e)}"
+        )
 
 @router.get("/role/{role}", response_model=List[UserResponse])
 def get_users_by_role_endpoint(
@@ -50,15 +59,25 @@ def get_users_by_role_endpoint(
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_new_user(user: UserCreate, db: Session = Depends(get_db)):
     """Create a new user"""
-    # Check if user with email already exists
-    existing_user = get_user_by_email(db, user.email)
-    if existing_user:
+    try:
+        # Check if user with email already exists
+        existing_user = get_user_by_email(db, user.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this email already exists"
+            )
+        
+        print(f"🔐 create_new_user: Creating user with email: {user.email}, role: {user.role}, is_active: {user.is_active}")
+        result = create_user(db=db, user=user)
+        print(f"🔐 create_new_user: User created successfully: {result.id}")
+        return result
+    except Exception as e:
+        print(f"🔐 create_new_user: Error creating user: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}"
         )
-    
-    return create_user(db=db, user=user)
 
 @router.get("/", response_model=List[UserResponse])
 def get_all_users(

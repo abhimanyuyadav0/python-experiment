@@ -7,7 +7,7 @@ class UserBase(BaseModel):
     name: str
     email: EmailStr
     role: UserRole = UserRole.user
-    is_active: bool = True
+    is_active: int = 1
 
 class UserCreate(UserBase):
     password: str
@@ -16,7 +16,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
+    is_active: Optional[int] = None
 
 class UserResponse(UserBase):
     id: int

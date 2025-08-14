@@ -129,9 +129,20 @@ const DataHuntPage = () => {
     customer_id: "",
     amount: 0,
     currency: "USD",
-    payment_method: "credit_card",
-    payment_provider: "stripe",
-    transaction_type: "purchase",
+    payment_method: {
+      method_type: "credit_card",
+      provider: "stripe",
+      last_four: "",
+      card_brand: "visa",
+      expiry_month: 12,
+      expiry_year: 2026,
+    },
+    capture_method: "automatic",
+    description: "",
+    metadata: {},
+    receipt_email: "",
+    application_fee_amount: 0,
+    statement_descriptor: "",
   });
 
   const [customerForm, setCustomerForm] = useState<CustomerCreateData>({
@@ -236,12 +247,41 @@ const DataHuntPage = () => {
     setCustomerForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const { mutate: createPaymentMutation } = useMutation({
+    mutationFn: (payment: PaymentCreateData) => createPayment(payment),
+    onSuccess: () => {
+      refetchPayments();
+      toast.success("Payment created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create payment");
+    },
+  });
+  const { mutate: createOrderMutation } = useMutation({
+    mutationFn: (order: OrderCreateData) => createOrder(order),
+    onSuccess: () => {
+      refetchOrders();
+      toast.success("Order created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create order");
+    },
+  });
+  const { mutate: createProductMutation } = useMutation({
+    mutationFn: (product: ProductCreateData) => createProduct(product),
+    onSuccess: () => {
+      refetchProducts();
+      toast.success("Product created successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to create product");
+    },
+  });
   // Submit handlers
   const handleCreateOrder = async () => {
     try {
       setLoading(true);
-      await createOrder(orderForm);
-      toast.success("Order created successfully!");
+      createOrderMutation(orderForm);
       handleCreateOrderModal();
       setOrderForm({
         customer_id: "",
@@ -263,8 +303,7 @@ const DataHuntPage = () => {
   const handleCreateProduct = async () => {
     try {
       setLoading(true);
-      await createProduct(productForm);
-      toast.success("Product created successfully!");
+      createProductMutation(productForm);
       handleCreateProductModal();
       setProductForm({
         name: "",
@@ -287,17 +326,27 @@ const DataHuntPage = () => {
   const handleCreatePayment = async () => {
     try {
       setLoading(true);
-      await createPayment(paymentForm);
-      toast.success("Payment created successfully!");
+      createPaymentMutation(paymentForm);
       handleCreatePaymentModal();
       setPaymentForm({
         order_id: "",
         customer_id: "",
         amount: 0,
         currency: "USD",
-        payment_method: "credit_card",
-        payment_provider: "stripe",
-        transaction_type: "purchase",
+        payment_method: {
+          method_type: "credit_card",
+          provider: "stripe",
+          last_four: "",
+          card_brand: "visa",
+          expiry_month: 12,
+          expiry_year: 2026,
+        },
+        capture_method: "automatic",
+        description: "",
+        metadata: {},
+        receipt_email: "",
+        application_fee_amount: 0,
+        statement_descriptor: "",
       });
     } catch (error) {
       console.error("Error creating payment:", error);
@@ -349,13 +398,14 @@ const DataHuntPage = () => {
     }
   };
   const { mutate: createUserMutation } = useMutation({
-    mutationFn: (user: UserCreateData) => signupUser({
-      name: user.name,
-      email: user.email,
-      password: user.password,
-      is_active: true,
-      role: user.role,
-    }),
+    mutationFn: (user: UserCreateData) =>
+      signupUser({
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        is_active: true,
+        role: user.role,
+      }),
     onSuccess: () => {
       refetchUsers();
       toast.success("User created successfully!");
@@ -522,20 +572,20 @@ const DataHuntPage = () => {
         .toUpperCase()}`,
       amount: 1359.97,
       currency: "USD",
-      payment_method: "credit_card",
-      payment_provider: "stripe",
-      transaction_type: "purchase",
+      payment_method: {
+        method_type: "credit_card",
+        provider: "stripe",
+        last_four: "4242",
+        card_brand: "visa",
+        expiry_month: 12,
+        expiry_year: 2026,
+      },
       description: "Payment for electronics order",
       metadata: {
         source: "web",
         campaign: "summer_sale_2024",
       },
-      payment_method_details: {
-        card_last4: "4242",
-        card_brand: "visa",
-        card_exp_month: 12,
-        card_exp_year: 2026,
-      },
+      capture_method: "automatic",
     };
     setPaymentForm(dummyPayment);
   };
@@ -1148,19 +1198,17 @@ const DataHuntPage = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Transaction Type
+                Capture Method
               </label>
               <select
-                value={paymentForm.transaction_type}
+                value={paymentForm.capture_method || "automatic"}
                 onChange={(e) =>
-                  handlePaymentFormChange("transaction_type", e.target.value)
+                  handlePaymentFormChange("capture_method", e.target.value)
                 }
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
-                <option value="purchase">Purchase</option>
-                <option value="refund">Refund</option>
-                <option value="capture">Capture</option>
-                <option value="void">Void</option>
+                <option value="automatic">Automatic</option>
+                <option value="manual">Manual</option>
               </select>
             </div>
           </div>
@@ -1168,12 +1216,15 @@ const DataHuntPage = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Method
+                Payment Method Type
               </label>
               <select
-                value={paymentForm.payment_method}
+                value={paymentForm.payment_method.method_type}
                 onChange={(e) =>
-                  handlePaymentFormChange("payment_method", e.target.value)
+                  handlePaymentFormChange("payment_method", {
+                    ...paymentForm.payment_method,
+                    method_type: e.target.value as any,
+                  })
                 }
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
@@ -1188,9 +1239,12 @@ const DataHuntPage = () => {
                 Payment Provider
               </label>
               <select
-                value={paymentForm.payment_provider}
+                value={paymentForm.payment_method.provider}
                 onChange={(e) =>
-                  handlePaymentFormChange("payment_provider", e.target.value)
+                  handlePaymentFormChange("payment_method", {
+                    ...paymentForm.payment_method,
+                    provider: e.target.value as any,
+                  })
                 }
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
@@ -1203,6 +1257,183 @@ const DataHuntPage = () => {
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Four Digits
+                </label>
+                <input
+                  type="text"
+                  value={paymentForm.payment_method.last_four || ""}
+                  onChange={(e) =>
+                    handlePaymentFormChange("payment_method", {
+                      ...paymentForm.payment_method,
+                      last_four: e.target.value,
+                    })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Last 4 digits"
+                  maxLength={4}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Brand
+                </label>
+                <select
+                  value={paymentForm.payment_method.card_brand || "visa"}
+                  onChange={(e) =>
+                    handlePaymentFormChange("payment_method", {
+                      ...paymentForm.payment_method,
+                      card_brand: e.target.value,
+                    })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="visa">Visa</option>
+                  <option value="mastercard">Mastercard</option>
+                  <option value="amex">American Express</option>
+                  <option value="discover">Discover</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expiry Month
+                </label>
+                <select
+                  value={paymentForm.payment_method.expiry_month || 12}
+                  onChange={(e) =>
+                    handlePaymentFormChange("payment_method", {
+                      ...paymentForm.payment_method,
+                      expiry_month: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                    <option key={month} value={month}>
+                      {month.toString().padStart(2, "0")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expiry Year
+                </label>
+                <select
+                  value={paymentForm.payment_method.expiry_year || 2026}
+                  onChange={(e) =>
+                    handlePaymentFormChange("payment_method", {
+                      ...paymentForm.payment_method,
+                      expiry_year: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  {Array.from(
+                    { length: 10 },
+                    (_, i) => new Date().getFullYear() + i
+                  ).map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Description
+               </label>
+               <textarea
+                 value={paymentForm.description || ""}
+                 onChange={(e) =>
+                   handlePaymentFormChange("description", e.target.value)
+                 }
+                 className="w-full p-2 border border-gray-300 rounded-md"
+                 placeholder="Payment description"
+                 rows={3}
+               />
+             </div>
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Statement Descriptor
+               </label>
+               <input
+                 type="text"
+                 value={paymentForm.statement_descriptor || ""}
+                 onChange={(e) =>
+                   handlePaymentFormChange("statement_descriptor", e.target.value)
+                 }
+                 className="w-full p-2 border border-gray-300 rounded-md"
+                 placeholder="Statement descriptor"
+                 maxLength={22}
+               />
+             </div>
+           </div>
+
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+               Metadata (JSON)
+             </label>
+             <textarea
+               value={JSON.stringify(paymentForm.metadata || {}, null, 2)}
+               onChange={(e) => {
+                 try {
+                   const metadata = JSON.parse(e.target.value);
+                   handlePaymentFormChange("metadata", metadata);
+                 } catch (error) {
+                   // Ignore invalid JSON
+                 }
+               }}
+               className="w-full p-2 border border-gray-300 rounded-md"
+               placeholder='{"source": "web", "campaign": "summer_sale_2024"}'
+               rows={3}
+             />
+           </div>
+
+           <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Receipt Email
+               </label>
+               <input
+                 type="email"
+                 value={paymentForm.receipt_email || ""}
+                 onChange={(e) =>
+                   handlePaymentFormChange("receipt_email", e.target.value)
+                 }
+                 className="w-full p-2 border border-gray-300 rounded-md"
+                 placeholder="Email for receipt"
+               />
+             </div>
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Application Fee Amount
+               </label>
+               <input
+                 type="number"
+                 value={paymentForm.application_fee_amount || 0}
+                 onChange={(e) =>
+                   handlePaymentFormChange(
+                     "application_fee_amount",
+                     parseFloat(e.target.value)
+                   )
+                 }
+                 className="w-full p-2 border border-gray-300 rounded-md"
+                 placeholder="Fee amount"
+                 step="0.01"
+                 min="0"
+               />
+             </div>
+           </div>
+
             <Button
               onClick={handleCreatePaymentModal}
               variant="secondary"
@@ -1748,11 +1979,9 @@ const DataHuntPage = () => {
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {paymentsRes?.payments?.map((payment: Payment) => (
-                <div key={payment._id} className="border p-4 rounded-lg">
+                <div key={payment.id} className="border p-4 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold">
-                      Payment #{payment.payment_id}
-                    </h4>
+                    <h4 className="font-semibold">Payment #{payment.id}</h4>
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
                         payment.status === "completed"
@@ -1774,8 +2003,8 @@ const DataHuntPage = () => {
                     Amount: {payment.currency} {payment.amount}
                   </p>
                   <p className="text-sm text-gray-600 mb-2">
-                    Method: {payment.payment_method} via{" "}
-                    {payment.payment_provider}
+                    Method: {payment.payment_method.method_type} via{" "}
+                    {payment.payment_method.provider}
                   </p>
                   <p className="text-xs text-gray-500">
                     {new Date(payment.created_at).toLocaleDateString()}
@@ -1900,9 +2129,20 @@ const DataHuntPage = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="text-center py-8 text-gray-500">
-            User management functionality coming soon...
-          </div>
+          {isUsersLoading ? (
+            <div className="text-center py-8">Loading users...</div>
+          ) : usersRes?.users?.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No users found</div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {usersRes?.map((user: any) => (
+                <div key={user.id} className="border border-gray-300 p-4 rounded-lg">
+                  <h4 className="font-semibold">{user.name}</h4>
+                  <p className="text-sm text-gray-600">{user.email}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

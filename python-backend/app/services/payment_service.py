@@ -14,12 +14,17 @@ import re
 
 class PaymentService:
     def __init__(self):
-        self.db = get_mongodb()
-        self.payments_collection = self.db.payments
-        self.refunds_collection = self.db.refunds
-        self.payment_methods_collection = self.db.payment_methods
-        self.payment_intents_collection = self.db.payment_intents
-        self.webhook_events_collection = self.db.webhook_events
+        try:
+            self.db = get_mongodb()
+            self.payments_collection = self.db.payments
+            self.refunds_collection = self.db.refunds
+            self.payment_methods_collection = self.db.payment_methods
+            self.payment_intents_collection = self.db.payment_intents
+            self.webhook_events_collection = self.db.webhook_events
+            print("✅ PaymentService: MongoDB connection successful")
+        except Exception as e:
+            print(f"❌ PaymentService: MongoDB connection failed: {str(e)}")
+            raise RuntimeError(f"MongoDB connection failed: {str(e)}")
 
     async def create_payment(self, payment_data: PaymentCreateSchema) -> PaymentResponseSchema:
         """Create a new payment"""

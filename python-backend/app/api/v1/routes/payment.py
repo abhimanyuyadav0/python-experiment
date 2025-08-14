@@ -9,6 +9,16 @@ from app.schemas.payment import (
     PaymentStatus, PaymentMethod, PaymentProvider, Currency
 )
 from app.services.payment_service import PaymentService
+from app.services.payment_service_sqlite import PaymentServiceSQLite
+
+# Use SQLite service for development when MongoDB is not available
+try:
+    PaymentService()
+    print("✅ Using MongoDB PaymentService")
+    PaymentServiceClass = PaymentService
+except Exception as e:
+    print(f"⚠️ MongoDB not available, using SQLite PaymentService: {str(e)}")
+    PaymentServiceClass = PaymentServiceSQLite
 
 router = APIRouter()
 
@@ -25,10 +35,14 @@ async def create_payment(payment_data: PaymentCreateSchema):
     - **Metadata**: Additional custom data for the payment
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         payment = await payment_service.create_payment(payment_data)
         return payment
+    except RuntimeError as e:
+        print(f"❌ Payment creation failed - MongoDB connection error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
     except Exception as e:
+        print(f"❌ Payment creation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create payment: {str(e)}")
 
 @router.get("/{payment_id}", response_model=PaymentResponseSchema, summary="Get payment by ID")
@@ -38,7 +52,7 @@ async def get_payment(payment_id: str):
     
     - **payment_id**: The unique identifier of the payment
     """
-    payment_service = PaymentService()
+    payment_service = PaymentServiceClass()
     payment = await payment_service.get_payment_by_id(payment_id)
     
     if not payment:
@@ -54,7 +68,7 @@ async def get_payments_by_order(order_id: str):
     - **order_id**: The order ID to get payments for
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         payments = await payment_service.get_payments_by_order_id(order_id)
         return payments
     except Exception as e:
@@ -74,7 +88,7 @@ async def get_payments_by_customer(
     - **limit**: Maximum number of records to return (max 100)
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         result = await payment_service.get_payments_by_customer_id(customer_id, skip, limit)
         return result
     except Exception as e:
@@ -108,7 +122,7 @@ async def get_payments(
             currency=currency
         )
         
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         result = await payment_service.search_payments(search_params, skip, limit)
         return result
     except Exception as e:
@@ -136,7 +150,7 @@ async def search_payments(
     - **sort_order**: Sort direction (asc/desc)
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         result = await payment_service.search_payments(search_params, skip, limit)
         return result
     except Exception as e:
@@ -151,7 +165,7 @@ async def update_payment(payment_id: str, update_data: PaymentUpdateSchema):
     - **update_data**: The new payment data to apply
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         updated_payment = await payment_service.update_payment(payment_id, update_data)
         
         if not updated_payment:
@@ -181,7 +195,7 @@ async def update_payment_status(
     - **failure_code**: Failure code if applicable (optional)
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         success = await payment_service.update_payment_status(
             payment_id, status, provider_payment_id, failure_reason, failure_code
         )
@@ -209,7 +223,7 @@ async def process_payment(
     - **provider_fee_amount**: Provider fee amount (optional)
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         success = await payment_service.process_payment(payment_id, provider_payment_id, provider_fee_amount)
         
         if not success:
@@ -230,7 +244,7 @@ async def capture_payment(payment_id: str, capture_data: PaymentCaptureSchema):
     - **capture_data**: Capture details including amount, statement descriptor, etc.
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         success = await payment_service.capture_payment(payment_id, capture_data)
         
         if not success:
@@ -254,7 +268,7 @@ async def create_refund(refund_data: RefundCreateSchema):
     - **metadata**: Additional metadata for the refund
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         refund = await payment_service.create_refund(refund_data)
         return refund
     except Exception as e:
@@ -267,7 +281,7 @@ async def get_refund(refund_id: str):
     
     - **refund_id**: The unique identifier of the refund
     """
-    payment_service = PaymentService()
+    payment_service = PaymentServiceClass()
     refund = await payment_service.get_refund_by_id(refund_id)
     
     if not refund:
@@ -283,7 +297,7 @@ async def get_refunds_by_payment(payment_id: str):
     - **payment_id**: The payment ID to get refunds for
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         refunds = await payment_service.get_refunds_by_payment_id(payment_id)
         return refunds
     except Exception as e:
@@ -301,7 +315,7 @@ async def create_payment_method(method_data: PaymentMethodCreateSchema):
     - **metadata**: Additional metadata for the payment method
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         payment_method = await payment_service.create_payment_method(method_data)
         return payment_method
     except Exception as e:
@@ -314,7 +328,7 @@ async def get_payment_method(method_id: str):
     
     - **method_id**: The unique identifier of the payment method
     """
-    payment_service = PaymentService()
+    payment_service = PaymentServiceClass()
     payment_method = await payment_service.get_payment_method_by_id(method_id)
     
     if not payment_method:
@@ -330,7 +344,7 @@ async def get_payment_methods_by_customer(customer_id: str):
     - **customer_id**: The customer ID to get payment methods for
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         payment_methods = await payment_service.get_payment_methods_by_customer_id(customer_id)
         return {
             "payment_methods": payment_methods,
@@ -348,7 +362,7 @@ async def update_payment_method(method_id: str, update_data: PaymentMethodUpdate
     - **update_data**: The new payment method data to apply
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         updated_method = await payment_service.update_payment_method(method_id, update_data)
         
         if not updated_method:
@@ -368,7 +382,7 @@ async def delete_payment_method(method_id: str):
     - **method_id**: The unique identifier of the payment method to delete
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         success = await payment_service.delete_payment_method(method_id)
         
         if not success:
@@ -394,7 +408,7 @@ async def create_payment_intent(intent_data: PaymentIntentSchema):
     - **capture_method**: Capture method (automatic/manual)
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         payment_intent = await payment_service.create_payment_intent(intent_data)
         return payment_intent
     except Exception as e:
@@ -407,7 +421,7 @@ async def get_payment_intent(intent_id: str):
     
     - **intent_id**: The unique identifier of the payment intent
     """
-    payment_service = PaymentService()
+    payment_service = PaymentServiceClass()
     payment_intent = await payment_service.get_payment_intent_by_id(intent_id)
     
     if not payment_intent:
@@ -429,7 +443,7 @@ async def update_payment_intent_status(
     - **next_action**: Next action required (optional)
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         success = await payment_service.update_payment_intent_status(intent_id, status, next_action)
         
         if not success:
@@ -468,7 +482,7 @@ async def get_payment_statistics(
         if end_date:
             parsed_end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
         
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         stats = await payment_service.get_payment_statistics(parsed_start_date, parsed_end_date)
         return stats
     except ValueError as e:
@@ -488,7 +502,7 @@ async def create_webhook_event(event_data: WebhookEventSchema):
     - **data**: Webhook event data
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         webhook_event = await payment_service.create_webhook_event(event_data)
         return webhook_event
     except Exception as e:
@@ -504,7 +518,7 @@ async def get_unprocessed_webhook_events(
     - **provider**: Filter by payment provider (optional)
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         events = await payment_service.get_unprocessed_webhook_events(provider)
         return events
     except Exception as e:
@@ -518,7 +532,7 @@ async def mark_webhook_event_processed(event_id: str):
     - **event_id**: The unique identifier of the webhook event
     """
     try:
-        payment_service = PaymentService()
+        payment_service = PaymentServiceClass()
         success = await payment_service.mark_webhook_event_processed(event_id)
         
         if not success:

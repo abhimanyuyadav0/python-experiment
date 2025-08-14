@@ -2,56 +2,62 @@ import axoisInstance from "../../axois";
 
 // Payment Types
 export interface PaymentMethodDetails {
-  card_last4?: string;
+  method_type: 'credit_card' | 'debit_card' | 'bank_transfer' | 'digital_wallet' | 'cryptocurrency' | 'cash' | 'check' | 'other';
+  provider: 'stripe' | 'paypal' | 'square' | 'braintree' | 'adyen' | 'razorpay' | 'custom';
+  account_id?: string;
+  last_four?: string;
+  expiry_month?: number;
+  expiry_year?: number;
   card_brand?: string;
-  card_exp_month?: number;
-  card_exp_year?: number;
-  bank_last4?: string;
   bank_name?: string;
-  account_type?: string;
+  wallet_type?: string;
+  crypto_address?: string;
 }
 
 export interface PaymentCreateData {
   order_id: string;
   customer_id: string;
   amount: number;
-  currency: string;
-  payment_method: string;
-  payment_provider: string;
-  transaction_type: 'purchase' | 'refund' | 'capture' | 'void';
+  currency: 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'INR' | 'CNY' | 'BRL' | 'MXN';
+  payment_method: PaymentMethodDetails;
   description?: string;
   metadata?: Record<string, any>;
-  payment_method_details?: PaymentMethodDetails;
+  capture_method?: string;
+  statement_descriptor?: string;
+  receipt_email?: string;
+  application_fee_amount?: number;
 }
 
 export interface PaymentUpdateData {
-  amount?: number;
-  currency?: string;
-  payment_method?: string;
-  payment_provider?: string;
   description?: string;
   metadata?: Record<string, any>;
-  payment_method_details?: PaymentMethodDetails;
+  statement_descriptor?: string;
+  receipt_email?: string;
+  application_fee_amount?: number;
 }
 
 export interface Payment {
-  _id: string;
-  payment_id: string;
+  id: string;  // Changed from _id to id to match backend
   order_id: string;
   customer_id: string;
   amount: number;
-  currency: string;
-  payment_method: string;
-  payment_provider: string;
-  transaction_type: 'purchase' | 'refund' | 'capture' | 'void';
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded';
+  currency: 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'INR' | 'CNY' | 'BRL' | 'MXN';
+  payment_method: PaymentMethodDetails;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded' | 'partially_refunded' | 'disputed';
   description?: string;
   metadata?: Record<string, any>;
-  payment_method_details?: PaymentMethodDetails;
-  provider_transaction_id?: string;
-  provider_response?: Record<string, any>;
+  capture_method: string;
+  statement_descriptor?: string;
+  receipt_email?: string;
+  application_fee_amount?: number;
+  provider_payment_id?: string;
+  provider_fee_amount?: number;
+  net_amount: number;
+  failure_reason?: string;
+  failure_code?: string;
   created_at: string;
   updated_at: string;
+  processed_at?: string;
 }
 
 export interface RefundCreateData {

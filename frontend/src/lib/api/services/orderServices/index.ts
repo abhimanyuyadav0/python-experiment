@@ -17,6 +17,7 @@ export interface OrderCreateData {
   items: OrderItem[];
   shipping_address: string;  // Changed from object to string to match backend
   notes?: string;
+  payment_id?: string;
 }
 
 export interface OrderUpdateData {

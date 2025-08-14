@@ -36,8 +36,9 @@ class OrderService:
             "total_amount": round(total_amount, 2),
             "status": OrderStatus.PENDING,
             "notes": order_data.notes,
+            "payment_id": order_data.payment_id,
             "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "updated_at": datetime.utcnow(),
         }
 
         # Insert order into database

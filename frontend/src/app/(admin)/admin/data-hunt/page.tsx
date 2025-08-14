@@ -503,6 +503,7 @@ const DataHuntPage = () => {
       })),
       shipping_address: "123 Main Street, New York, NY 10001, USA",
       notes: "Please deliver during business hours",
+      payment_id: "",
     };
     setOrderForm(dummyOrder);
   };
@@ -666,14 +667,19 @@ const DataHuntPage = () => {
   };
   
 
-  const generatePaymentData = () => {
+  const pickRandomOrder = async () => {
+    const ordersData = ordersRes?.orders?.map((order: Order) => order);
+    const randomIndex = Math.floor(Math.random() * ordersData.length);
+    return ordersData[randomIndex];
+  };
+
+  const generatePaymentData = async () => {
+    const order = await pickRandomOrder();
+    const customer = await pickRandomCustomer();
     const dummyPayment: PaymentCreateData = {
-      order_id: `ORD_${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-      customer_id: `CUST_${Math.random()
-        .toString(36)
-        .substr(2, 8)
-        .toUpperCase()}`,
-      amount: 1359.97,
+      order_id: order.id,
+      customer_id: customer.username,
+      amount: order.total_price,
       currency: "USD",
       payment_method: {
         method_type: "credit_card",

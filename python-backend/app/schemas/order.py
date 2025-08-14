@@ -26,7 +26,7 @@ class OrderCreateSchema(BaseModel):
     shipping_address: str = Field(..., description="Shipping address")
     items: List[OrderItemSchema] = Field(..., min_items=1, description="Order items")
     notes: Optional[str] = Field(None, description="Additional notes")
-
+    payment_id: Optional[str] = Field(None, description="Payment ID")
 class OrderUpdateSchema(BaseModel):
     status: Optional[OrderStatus] = Field(None, description="Order status")
     shipping_address: Optional[str] = Field(None, description="Shipping address")
@@ -48,7 +48,7 @@ class OrderResponseSchema(BaseModel):
     notes: Optional[str] = Field(None, description="Additional notes")
     created_at: datetime = Field(..., description="Order creation timestamp")
     updated_at: datetime = Field(..., description="Order last update timestamp")
-
+    payment_id: Optional[str] = Field(None, description="Payment ID")
 class OrderListResponseSchema(BaseModel):
     orders: List[OrderResponseSchema] = Field(..., description="List of orders")
     total: int = Field(..., description="Total number of orders")

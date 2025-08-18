@@ -145,6 +145,24 @@ const DataHuntPage = () => {
     const users = usersRes?.map((user: User) => user.id);
     return String(users?.[Math.floor(Math.random() * users.length)] || "1");
   };
+  // API queries
+  const {
+    data: customersRes,
+    isLoading: isCustomersLoading,
+    refetch: refetchCustomers,
+  } = useQuery({
+    queryKey: ["customers"],
+    queryFn: () => getAllCustomers(),
+  });
+
+  const pickRandomCustomer = () => {
+    const customers = customersRes?.customers?.map(
+      (customer: Customer) => customer.customer_id
+    );
+    return String(
+      customers?.[Math.floor(Math.random() * customers.length)] || "1"
+    );
+  };
 
   // Bulk data storage
   const [bulkDataStorage, setBulkDataStorage] = useState<{
@@ -159,16 +177,6 @@ const DataHuntPage = () => {
     usersData: [],
     ordersData: [],
     paymentsData: [],
-  });
-
-  // API queries
-  const {
-    data: customersRes,
-    isLoading: isCustomersLoading,
-    refetch: refetchCustomers,
-  } = useQuery({
-    queryKey: ["customers"],
-    queryFn: () => getAllCustomers(),
   });
 
   const {
@@ -211,7 +219,6 @@ const DataHuntPage = () => {
   const { mutate: createPaymentMutation } = useMutation({
     mutationFn: (payment: PaymentCreateData) => createPayment(payment),
     onSuccess: () => {
-      refetchPayments();
       toast.success("Payment created successfully!");
     },
     onError: () => {
@@ -222,7 +229,6 @@ const DataHuntPage = () => {
   const { mutate: createOrderMutation } = useMutation({
     mutationFn: (order: OrderCreateData) => createOrder(order),
     onSuccess: () => {
-      refetchOrders();
       toast.success("Order created successfully!");
     },
     onError: () => {
@@ -233,7 +239,6 @@ const DataHuntPage = () => {
   const { mutate: createProductMutation } = useMutation({
     mutationFn: (product: ProductCreateData) => createProduct(product),
     onSuccess: () => {
-      refetchProducts();
       toast.success("Product created successfully!");
     },
     onError: () => {
@@ -244,7 +249,6 @@ const DataHuntPage = () => {
   const { mutate: createCustomerMutation } = useMutation({
     mutationFn: (customer: CustomerCreateData) => createCustomer(customer),
     onSuccess: () => {
-      refetchCustomers();
       toast.success("Customer created successfully!");
     },
     onError: () => {
@@ -262,7 +266,6 @@ const DataHuntPage = () => {
         role: user.role,
       }),
     onSuccess: () => {
-      refetchUsers();
       toast.success("User created successfully!");
     },
     onError: () => {
@@ -395,8 +398,9 @@ const DataHuntPage = () => {
         }));
 
         // Generate order data
+        const quantity = Math.floor(Math.random() * 10) + 1;
         const orderData = {
-          customer_id: customerData.email,
+          customer_id: pickRandomCustomer(),
           customer_name: `${customerData.first_name} ${customerData.last_name}`,
           customer_email: customerData.email,
           customer_phone: customerData.phone,
@@ -404,12 +408,12 @@ const DataHuntPage = () => {
             {
               product_id: productData.sku,
               product_name: productData.name,
-              quantity: Math.floor(Math.random() * 10) + 1,
+              quantity: quantity,
               unit_price: productData.base_price,
-              total_price: productData.base_price,
+              total_price: productData.base_price * quantity,
             },
           ],
-          shipping_address: `${customerData.address_line1}, ${customerData.city}, ${customerData.state}`,
+          shipping_address: `${customerData.address_line1}, ${customerData.city}, ${customerData.state} ${customerData.postal_code}, ${customerData.country}`,
           notes: "Please deliver during business hours",
         };
         newBulkData.ordersData.push(orderData);
@@ -420,9 +424,9 @@ const DataHuntPage = () => {
 
         // Generate payment data
         const paymentData = {
-          order_id: customerData.email,
-          customer_id: customerData.email,
-          amount: productData.base_price,
+          order_id: orderData.customer_id, // Use the order's customer_id as temporary order_id since we don't have actual order ID yet
+          customer_id: orderData.customer_id,
+          amount: productData.base_price * quantity,
           currency: "USD" as
             | "USD"
             | "EUR"
@@ -579,36 +583,58 @@ const DataHuntPage = () => {
           }));
         }
 
-        // Store orders
-        for (const order of bulkDataStorage.ordersData) {
-          await createOrderMutation(order);
-          current++;
-          setBulkOperationStatus((prev) => ({
-            ...prev,
-            current,
-            progress: Math.round((current / totalOperations) * 100),
-          }));
+        // Store orders - Need to update customer_ids with actual created customers
+        const actualCustomers = await getAllCustomers();
+        if (actualCustomers?.data && actualCustomers.data.length > 0) {
+          for (let i = 0; i < bulkDataStorage.ordersData.length; i++) {
+            const order = { ...bulkDataStorage.ordersData[i] };
+            // Use a real customer_id from created customers
+            const randomCustomer =
+              actualCustomers.data[
+                Math.floor(Math.random() * actualCustomers.data.length)
+              ];
+            order.customer_id = randomCustomer.customer_id;
+            order.customer_name =
+              randomCustomer.first_name + " " + randomCustomer.last_name;
+            order.customer_email = randomCustomer.email;
+            order.customer_phone = randomCustomer.phone;
+            order.shipping_address = randomCustomer.address_line1
+              ? `${randomCustomer.address_line1}, ${randomCustomer.city}, ${randomCustomer.state} ${randomCustomer.postal_code}, ${randomCustomer.country}`
+              : "123 Main Street, New York, NY 10001, USA";
+
+            await createOrderMutation(order);
+            current++;
+            setBulkOperationStatus((prev) => ({
+              ...prev,
+              current,
+              progress: Math.round((current / totalOperations) * 100),
+            }));
+          }
         }
 
-        // Store payments
-        for (const payment of bulkDataStorage.paymentsData) {
-          await createPaymentMutation(payment);
-          current++;
-          setBulkOperationStatus((prev) => ({
-            ...prev,
-            current,
-            progress: Math.round((current / totalOperations) * 100),
-          }));
-        }
+        // Store payments - Need to update with actual order data
+        const actualOrders = ordersRes?.orders;
+        if (actualOrders?.orders && actualOrders.orders.length > 0) {
+          for (let i = 0; i < bulkDataStorage.paymentsData.length; i++) {
+            const payment = { ...bulkDataStorage.paymentsData[i] };
+            // Use a real order from created orders
+            const randomOrder =
+              actualOrders.orders[
+                Math.floor(Math.random() * actualOrders.orders.length)
+              ];
+            payment.order_id = randomOrder.id;
+            payment.customer_id = randomOrder.customer_id;
+            payment.amount = randomOrder.total_amount;
 
-        // Refresh all data
-        await Promise.all([
-          refetchProducts(),
-          refetchCustomers(),
-          refetchUsers(),
-          refetchOrders(),
-          refetchPayments(),
-        ]);
+            await createPaymentMutation(payment);
+            current++;
+            setBulkOperationStatus((prev) => ({
+              ...prev,
+              current,
+              progress: Math.round((current / totalOperations) * 100),
+            }));
+          }
+        }
       },
       "Bulk data storage",
       totalOperations
@@ -633,7 +659,6 @@ const DataHuntPage = () => {
             ),
           }));
         }
-        await refetchProducts();
       },
       "Product bulk storage",
       bulkDataStorage.productsData.length
@@ -658,7 +683,6 @@ const DataHuntPage = () => {
             ),
           }));
         }
-        await refetchCustomers();
       },
       "Customer bulk storage",
       bulkDataStorage.customersData.length
@@ -683,7 +707,6 @@ const DataHuntPage = () => {
             ),
           }));
         }
-        await refetchUsers();
       },
       "User bulk storage",
       bulkDataStorage.usersData.length
@@ -698,8 +721,28 @@ const DataHuntPage = () => {
 
     await executeBulkOperation(
       async () => {
+        // Get actual customers to use real customer_ids
+        const actualCustomers = customersRes?.customers;
+        if (!actualCustomers || actualCustomers.length === 0) {
+          toast.error("No customers found. Please create customers first.");
+          return;
+        }
+
         for (let i = 0; i < bulkDataStorage.ordersData.length; i++) {
-          await createOrderMutation(bulkDataStorage.ordersData[i]);
+          const order = { ...bulkDataStorage.ordersData[i] };
+          // Use a real customer_id from created customers
+          const randomCustomer =  
+            actualCustomers[Math.floor(Math.random() * actualCustomers.length)];
+          order.customer_id = String(randomCustomer.customer_id);
+          order.customer_name =
+            randomCustomer.first_name + " " + randomCustomer.last_name;
+          order.customer_email = randomCustomer.email;
+          order.customer_phone = randomCustomer.phone;
+          order.shipping_address = randomCustomer.address_line1
+            ? `${randomCustomer.address_line1}, ${randomCustomer.city}, ${randomCustomer.state} ${randomCustomer.postal_code}, ${randomCustomer.country}`
+            : "123 Main Street, New York, NY 10001, USA";
+
+          await createOrderMutation(order);
           setBulkOperationStatus((prev) => ({
             ...prev,
             current: i + 1,
@@ -708,7 +751,6 @@ const DataHuntPage = () => {
             ),
           }));
         }
-        await refetchOrders();
       },
       "Order bulk storage",
       bulkDataStorage.ordersData.length
@@ -723,8 +765,25 @@ const DataHuntPage = () => {
 
     await executeBulkOperation(
       async () => {
+        // Get actual orders to use real order data
+        const actualOrders = await getAllOrders();
+        if (!actualOrders?.orders || actualOrders.orders.length === 0) {
+          toast.error("No orders found. Please create orders first.");
+          return;
+        }
+
         for (let i = 0; i < bulkDataStorage.paymentsData.length; i++) {
-          await createPaymentMutation(bulkDataStorage.paymentsData[i]);
+          const payment = { ...bulkDataStorage.paymentsData[i] };
+          // Use a real order from created orders
+          const randomOrder =
+            actualOrders.orders[
+              Math.floor(Math.random() * actualOrders.orders.length)
+            ];
+          payment.order_id = randomOrder.id;
+          payment.customer_id = randomOrder.customer_id;
+          payment.amount = randomOrder.total_amount;
+
+          await createPaymentMutation(payment);
           setBulkOperationStatus((prev) => ({
             ...prev,
             current: i + 1,
@@ -733,7 +792,6 @@ const DataHuntPage = () => {
             ),
           }));
         }
-        await refetchPayments();
       },
       "Payment bulk storage",
       bulkDataStorage.paymentsData.length
@@ -988,21 +1046,24 @@ const DataHuntPage = () => {
     const randomProductIndex = Math.floor(Math.random() * productsData.length);
     const product = productsData[randomProductIndex];
 
+    const quantity = Math.floor(Math.random() * 10) + 1;
     const dummyOrder: OrderCreateData = {
-      customer_id: customer.username,
+      customer_id: customer.customer_id, // Use the customer_id field instead of username
       customer_name: customer.first_name + " " + customer.last_name,
       customer_email: customer.email,
       customer_phone: customer.phone,
       items: [
         {
-          product_id: product.id,
+          product_id: product.sku,
           product_name: product.name,
-          quantity: Math.floor(Math.random() * 10) + 1,
+          quantity: quantity,
           unit_price: product.base_price,
-          total_price: product.base_price,
+          total_price: product.base_price * quantity,
         },
       ],
-      shipping_address: "123 Main Street, New York, NY 10001, USA",
+      shipping_address: customer.address_line1
+        ? `${customer.address_line1}, ${customer.city}, ${customer.state} ${customer.postal_code}, ${customer.country}`
+        : "123 Main Street, New York, NY 10001, USA",
       notes: "Please deliver during business hours",
     };
     setOrderForm(dummyOrder);
@@ -1072,7 +1133,7 @@ const DataHuntPage = () => {
 
     const dummyPayment: PaymentCreateData = {
       order_id: order.id,
-      customer_id: customer.username,
+      customer_id: customer.customer_id,
       amount: Number(order.total_amount),
       currency: "USD" as
         | "USD"
@@ -1157,12 +1218,40 @@ const DataHuntPage = () => {
     setCustomerForm(dummyCustomer);
   };
 
+  const [syncing, setSyncing] = useState(false);
+
+  const syncData = async () => {
+    setSyncing(true);
+    await refetchPayments();
+    await refetchOrders();
+    await refetchProducts();
+    await refetchCustomers();
+    await refetchUsers();
+    setSyncing(false);
+  };
+
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Data Hunt</h1>
-      <p className="text-gray-600 mb-6">
-        Data Hunt is a platform for finding and analyzing data.
-      </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-4">Data Hunt</h1>
+          <p className="text-gray-600 mb-6">
+            Data Hunt is a platform for finding and analyzing data.
+          </p>
+        </div>
+        <div>
+          <Button
+            disabled={syncing}
+            className="bg-green-500 text-white"
+            onClick={syncData}
+          >
+            Sync Data
+            {syncing && (
+              <span className="text-gray-600 text-sm animate-spin">🔄️</span>
+            )}
+          </Button>
+        </div>
+      </div>
 
       {/* Enhanced Bulk Data Section */}
       <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
@@ -1311,52 +1400,17 @@ const DataHuntPage = () => {
         </div>
       </div>
 
-      <h3 className="text-xl font-semibold mb-4">Data Hunt Postgres</h3>
+      <h3 className="text-xl font-semibold mb-4">Data Hunt MongoDB</h3>
       <div className="grid grid-cols-3 gap-6">
-        {/* Orders Section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold mb-4">Orders</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={handleCreateOrderModal}
-              variant="primary"
-              size="md"
-            >
-              Create Order
-            </Button>
-            <Button onClick={handleOrdersModal} variant="secondary" size="md">
-              View Orders ({ordersRes?.orders?.length})
-            </Button>
-            <Button
-              onClick={() => refetchOrders()}
-              variant="secondary"
-              size="md"
-            >
-              refetch
-            </Button>
-          </div>
-        </div>
-
         {/* Payments Section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold mb-4">Payments</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={handleCreatePaymentModal}
-              variant="primary"
-              size="md"
-            >
+            <Button onClick={handleCreatePaymentModal} variant="primary">
               Create Payment
             </Button>
-            <Button onClick={handlePaymentsModal} variant="secondary" size="md">
+            <Button onClick={handlePaymentsModal} variant="secondary">
               View Payments ({paymentsRes?.payments?.length})
-            </Button>
-            <Button
-              onClick={() => refetchPayments()}
-              variant="secondary"
-              size="md"
-            >
-              refetch
             </Button>
           </div>
         </div>
@@ -1365,45 +1419,27 @@ const DataHuntPage = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold mb-4">Products</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={handleCreateProductModal}
-              variant="primary"
-              size="md"
-            >
+            <Button onClick={handleCreateProductModal} variant="primary">
               Create Product
             </Button>
-            <Button onClick={handleProductsModal} variant="secondary" size="md">
+            <Button onClick={handleProductsModal} variant="secondary">
               View Products ({productsRes?.products?.length})
-            </Button>
-            <Button
-              onClick={() => refetchProducts()}
-              variant="secondary"
-              size="md"
-            >
-              refetch
             </Button>
           </div>
         </div>
       </div>
 
-      <h3 className="text-xl font-semibold my-4">Data Hunt MongoDB</h3>
+      <h3 className="text-xl font-semibold my-4">Data Hunt Postgres</h3>
       <div className="grid grid-cols-3 gap-6">
         {/* Users Section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold mb-4">Users</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Button onClick={handleCreateUserModal} variant="primary" size="md">
+            <Button onClick={handleCreateUserModal} variant="primary">
               Create User
             </Button>
-            <Button onClick={handleUsersModal} variant="secondary" size="md">
+            <Button onClick={handleUsersModal} variant="secondary">
               View Users ({usersRes?.length})
-            </Button>
-            <Button
-              onClick={() => refetchUsers()}
-              variant="secondary"
-              size="md"
-            >
-              refetch
             </Button>
           </div>
         </div>
@@ -1412,22 +1448,23 @@ const DataHuntPage = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold mb-4">Customers</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={handleCreateCustomerModal}
-              variant="primary"
-              size="md"
-            >
+            <Button onClick={handleCreateCustomerModal} variant="primary">
               Create Customer
             </Button>
-            <Button onClick={handleCustomerModal} variant="secondary" size="md">
+            <Button onClick={handleCustomerModal} variant="secondary">
               View Customers ({customersRes?.customers?.length})
             </Button>
-            <Button
-              onClick={() => refetchCustomers()}
-              variant="secondary"
-              size="md"
-            >
-              refetch
+          </div>
+        </div>
+        {/* Orders Section */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-xl font-semibold mb-4">Orders</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <Button onClick={handleCreateOrderModal} variant="primary">
+              Create Order
+            </Button>
+            <Button onClick={handleOrdersModal} variant="secondary">
+              View Orders ({ordersRes?.orders?.length})
             </Button>
           </div>
         </div>
@@ -2689,6 +2726,9 @@ const DataHuntPage = () => {
                       </h4>
                       <p className="text-sm text-gray-600">
                         @{customer.username} | {customer.customer_id}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {customer.id}
                       </p>
                     </div>
                     <div className="flex space-x-2">

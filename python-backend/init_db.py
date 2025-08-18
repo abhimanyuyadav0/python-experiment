@@ -10,6 +10,7 @@ from app.core.database import SessionLocal, Base, engine
 from app.models.user import User, UserRole
 from app.models.file import File
 from app.models.customer import Customer
+from app.models.order import Order, OrderItem
 from app.services.user_service import hash_password
 
 def init_database():

@@ -11,8 +11,9 @@ from app.services.order_service import OrderService
 
 router = APIRouter()
 print("🔄 Order router initialized")
+
 @router.post("/", response_model=OrderResponseSchema, summary="Create a new order")
-async def create_order(order_data: OrderCreateSchema):
+def create_order(order_data: OrderCreateSchema):
     """
     Create a new order with the following information:
     
@@ -29,9 +30,12 @@ async def create_order(order_data: OrderCreateSchema):
     
     try:
         order_service = OrderService()
-        order = await order_service.create_order(order_data)
+        order = order_service.create_order(order_data)
         print(f"✅ Order created successfully: {order.id}")
         return order
+    except ValueError as e:
+        print(f"❌ Validation error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         print(f"❌ OrderService initialization failed: {str(e)}")
         raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
@@ -42,7 +46,7 @@ async def create_order(order_data: OrderCreateSchema):
         raise HTTPException(status_code=500, detail=f"Failed to create order: {str(e)}")
 
 @router.get("/", response_model=OrderListResponseSchema, summary="Get all orders")
-async def get_orders(
+def get_orders(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, ge=1, le=100, description="Number of records to return"),
     customer_id: Optional[str] = Query(None, description="Filter by customer ID"),
@@ -59,49 +63,28 @@ async def get_orders(
     print("🔄 get_orders function called")
     try:
         order_service = OrderService()
-        result = await order_service.get_orders(skip, limit, customer_id, status)
+        result = order_service.get_orders(skip, limit, customer_id, status)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve orders: {str(e)}")
 
 @router.get("/{order_id}", response_model=OrderResponseSchema, summary="Get order by ID")
-async def get_order(order_id: str):
+def get_order(order_id: str):
     """
     Retrieve an order by its unique identifier.
     
     - **order_id**: The unique identifier of the order
     """
     order_service = OrderService()
-    order = await order_service.get_order_by_id(order_id)
+    order = order_service.get_order_by_id(order_id)
     
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
     return order
-async def get_orders(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(10, ge=1, le=100, description="Number of records to return"),
-    customer_id: Optional[str] = Query(None, description="Filter by customer ID"),
-    status: Optional[OrderStatus] = Query(None, description="Filter by order status")
-):
-    """
-    Retrieve a paginated list of orders with optional filtering.
-    
-    - **skip**: Number of records to skip for pagination
-    - **limit**: Maximum number of records to return
-    - **customer_id**: Filter orders by customer ID
-    - **status**: Filter orders by status
-    """
-    print("🔄 get_orders function called")
-    try:
-        order_service = OrderService()
-        result = await order_service.get_orders(skip, limit, customer_id, status)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve orders: {str(e)}")
 
 @router.put("/{order_id}", response_model=OrderResponseSchema, summary="Update order")
-async def update_order(order_id: str, update_data: OrderUpdateSchema):
+def update_order(order_id: str, update_data: OrderUpdateSchema):
     """
     Update an existing order with new information.
     
@@ -110,7 +93,7 @@ async def update_order(order_id: str, update_data: OrderUpdateSchema):
     """
     try:
         order_service = OrderService()
-        updated_order = await order_service.update_order(order_id, update_data)
+        updated_order = order_service.update_order(order_id, update_data)
         
         if not updated_order:
             raise HTTPException(status_code=404, detail="Order not found")
@@ -122,7 +105,7 @@ async def update_order(order_id: str, update_data: OrderUpdateSchema):
         raise HTTPException(status_code=500, detail=f"Failed to update order: {str(e)}")
 
 @router.delete("/{order_id}", summary="Delete order")
-async def delete_order(order_id: str):
+def delete_order(order_id: str):
     """
     Delete an order by its unique identifier.
     
@@ -130,7 +113,7 @@ async def delete_order(order_id: str):
     """
     try:
         order_service = OrderService()
-        success = await order_service.delete_order(order_id)
+        success = order_service.delete_order(order_id)
         
         if not success:
             raise HTTPException(status_code=404, detail="Order not found")
@@ -142,7 +125,7 @@ async def delete_order(order_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete order: {str(e)}")
 
 @router.get("/customer/{customer_id}", response_model=OrderListResponseSchema, summary="Get orders by customer")
-async def get_customer_orders(
+def get_customer_orders(
     customer_id: str,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, ge=1, le=100, description="Number of records to return")
@@ -156,13 +139,13 @@ async def get_customer_orders(
     """
     try:
         order_service = OrderService()
-        result = await order_service.get_orders_by_customer(customer_id, skip, limit)
+        result = order_service.get_orders_by_customer(customer_id, skip, limit)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve customer orders: {str(e)}")
 
 @router.patch("/{order_id}/status", response_model=OrderResponseSchema, summary="Update order status")
-async def update_order_status(order_id: str, status: OrderStatus):
+def update_order_status(order_id: str, status: OrderStatus):
     """
     Update the status of an order.
     
@@ -171,7 +154,7 @@ async def update_order_status(order_id: str, status: OrderStatus):
     """
     try:
         order_service = OrderService()
-        updated_order = await order_service.update_order_status(order_id, status)
+        updated_order = order_service.update_order_status(order_id, status)
         
         if not updated_order:
             raise HTTPException(status_code=404, detail="Order not found")

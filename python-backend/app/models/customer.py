@@ -48,9 +48,8 @@ class Customer(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Relationships (will be added when order/payment models are created)
-    # orders = relationship("Order", back_populates="customer", lazy="dynamic")
-    # payments = relationship("Payment", back_populates="customer", lazy="dynamic")
+    # Relationships
+    orders = relationship("Order", back_populates="customer", lazy="dynamic")
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

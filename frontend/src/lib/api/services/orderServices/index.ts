@@ -53,8 +53,8 @@ export const getOrderById = (orderId: string) => {
   return axoisInstance.get(`/api/v1/orders/${orderId}`);
 };
 
-export const getAllOrders = async () => {
-  const response = await axoisInstance.get('/api/v1/orders/');
+export const getAllOrders = async (params: { page: number; limit: number }) => {
+  const response = await axoisInstance.get(`/api/v1/orders/`, { params });
   console.log("orders response",response.data)
   return response.data
 };
@@ -68,7 +68,7 @@ export const updateOrder = (orderId: string, data: OrderUpdateData) => {
 };
 
 export const updateOrderStatus = (orderId: string, status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled') => {
-  return axoisInstance.patch(`/api/v1/orders/${orderId}/status`, status);
+  return axoisInstance.patch(`/api/v1/orders/${orderId}/status?status=${status}`);
 };
 
 export const deleteOrder = (orderId: string) => {

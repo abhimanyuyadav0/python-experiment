@@ -294,6 +294,22 @@ const DataHuntPage = () => {
       toast.error("Please enter a valid number between 1 and 1000");
       return;
     }
+    const customersData = customersRes?.customers?.map(
+      (customer: Customer) => customer
+    );
+    if (!customersData || customersData.length === 0) {
+      toast.error("No customers found");
+      return;
+    }
+    const randomIndex = Math.floor(Math.random() * customersData.length);
+    const customer = customersData[randomIndex];
+
+    const ordersData = ordersRes?.orders?.map(
+      (order: Order) => order
+    );
+   
+    const randomOrderIndex = Math.floor(Math.random() * ordersData.length);
+    const order = ordersData[randomOrderIndex];
 
     setBulkOperationStatus({
       isRunning: true,
@@ -393,13 +409,14 @@ const DataHuntPage = () => {
           ...prev,
           current: prev.current + 1,
         }));
-
+        console.log("customerData", customerData);
         // Generate order data
+       
         const orderData = {
-          customer_id: customerData.email,
-          customer_name: `${customerData.first_name} ${customerData.last_name}`,
-          customer_email: customerData.email,
-          customer_phone: customerData.phone,
+          customer_id: String(customer.id),
+          customer_name: `${customer.first_name} ${customer.last_name}`,
+          customer_email: customer.email,
+          customer_phone: customer.phone,
           items: [
             {
               product_id: productData.sku,
@@ -409,7 +426,7 @@ const DataHuntPage = () => {
               total_price: productData.base_price,
             },
           ],
-          shipping_address: `${customerData.address_line1}, ${customerData.city}, ${customerData.state}`,
+          shipping_address: `${customer.address_line1}, ${customer.city}, ${customer.state}`,
           notes: "Please deliver during business hours",
         };
         newBulkData.ordersData.push(orderData);
@@ -420,9 +437,9 @@ const DataHuntPage = () => {
 
         // Generate payment data
         const paymentData = {
-          order_id: customerData.email,
-          customer_id: customerData.email,
-          amount: productData.base_price,
+          order_id: order.id,
+          customer_id: String(customer.id),
+          amount: order.total_amount,
           currency: "USD" as
             | "USD"
             | "EUR"
@@ -461,9 +478,9 @@ const DataHuntPage = () => {
               new Date().getFullYear() + Math.floor(Math.random() * 5) + 1,
           },
           capture_method: "automatic",
-          description: `Payment for order by ${customerData.first_name}`,
+          description: `Payment for order by ${customer.first_name}`,
           metadata: { source: "web", campaign: "bulk_data_generation" },
-          receipt_email: customerData.email,
+          receipt_email: customer.email,
           application_fee_amount: 0,
           statement_descriptor: "BULK_DATA_TEST",
         };
@@ -989,13 +1006,13 @@ const DataHuntPage = () => {
     const product = productsData[randomProductIndex];
 
     const dummyOrder: OrderCreateData = {
-      customer_id: customer.username,
+      customer_id: String(customer.id),
       customer_name: customer.first_name + " " + customer.last_name,
       customer_email: customer.email,
       customer_phone: customer.phone,
       items: [
         {
-          product_id: product.id,
+          product_id: String(product.id),
           product_name: product.name,
           quantity: Math.floor(Math.random() * 10) + 1,
           unit_price: product.base_price,
@@ -1071,8 +1088,8 @@ const DataHuntPage = () => {
     const customer = customersData[randomCustomerIndex];
 
     const dummyPayment: PaymentCreateData = {
-      order_id: order.id,
-      customer_id: customer.username,
+      order_id: String(order.id),
+      customer_id: String(customer.id),
       amount: Number(order.total_amount),
       currency: "USD" as
         | "USD"
